@@ -1,0 +1,770 @@
+<title>대통령 5년</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: 집무실 책상 — 왼쪽은 국정 지표판, 가운데는 결재 대기 보고서 한 장, 아래는 국정 일지. 좁은 화면에선 한 줄로 쌓임. */
+:root {
+  --bg: #eef1f2;
+  --sheet: #ffffff;
+  --ink: #18222c;
+  --muted: #5a6874;
+  --line: #d3dade;
+  --jade: #1d6a5b;
+  --jade-soft: #dcebe6;
+  --seal: #b3261e;
+  --good: #23784a;
+  --bad: #b3261e;
+  --warn: #9a6300;
+  --track: #e2e7ea;
+  --f-display: "Gowun Batang", "Nanum Myeongjo", "Batang", serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1418; --sheet: #182027; --ink: #e5eaee; --muted: #93a1ac; --line: #2a353e;
+    --jade: #63b9a5; --jade-soft: #1d3530; --seal: #e3685e; --good: #5cc28a; --bad: #ec7a70;
+    --warn: #e0a84a; --track: #24303a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1418; --sheet: #182027; --ink: #e5eaee; --muted: #93a1ac; --line: #2a353e;
+  --jade: #63b9a5; --jade-soft: #1d3530; --seal: #e3685e; --good: #5cc28a; --bad: #ec7a70;
+  --warn: #e0a84a; --track: #24303a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; font-weight: 700; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, label:focus-within { outline: 2px solid var(--jade); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* 머리말 */
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+.top h1 { font-size: clamp(24px, 4vw, 34px); line-height: 1.15; }
+.top h1 small { display: block; font-family: var(--f-body); font-size: 12.5px; font-weight: 500; color: var(--muted); letter-spacing: .04em; margin-bottom: 4px; }
+.term { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 0 1 360px; }
+.term-head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.term-head b { font-family: var(--f-display); font-size: 18px; }
+.segs { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.segs i { height: 8px; background: var(--track); border-radius: 1px; }
+.segs i.done { background: var(--jade); }
+.segs i.now { background: var(--seal); }
+.segs i.elect { box-shadow: inset 0 -3px 0 var(--warn); }
+
+/* 본문 그리드 */
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* 지표판 */
+.board { display: flex; flex-direction: column; gap: 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
+.poll { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
+.poll-num { display: flex; align-items: baseline; gap: 8px; }
+.poll-num strong { font-family: var(--f-display); font-size: 52px; line-height: 1; }
+.poll-num span { font-size: 18px; color: var(--muted); }
+.poll .src { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.spark { width: 100%; height: 54px; display: block; }
+.stat { display: grid; grid-template-columns: 48px 1fr 44px; align-items: center; gap: 10px; font-size: 13.5px; }
+.stat .nm { font-weight: 600; }
+.bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--jade); border-radius: 4px; transition: width .5s ease; }
+.bar.low > span { background: var(--bad); }
+.bar.mid > span { background: var(--warn); }
+.bar.fat > span { background: var(--muted); }
+.stat .v { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.treasury { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 1px dashed var(--line); }
+.treasury b { font-family: var(--f-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.treasury b.neg { color: var(--bad); }
+.warns { display: flex; flex-direction: column; gap: 6px; }
+.warn { font-size: 12.5px; padding: 6px 10px; border-radius: 4px; background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); font-weight: 600; }
+
+/* 보고서 */
+.desk { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.doc { position: relative; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 26px clamp(18px, 4vw, 36px) 28px; overflow: hidden; }
+.doc-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 12px; color: var(--muted); padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.doc-meta .cls { color: var(--seal); font-weight: 700; letter-spacing: .1em; }
+.doc h2 { font-size: clamp(22px, 3.2vw, 28px); line-height: 1.3; margin-bottom: 12px; }
+.doc p { margin: 0 0 18px; max-width: 62ch; }
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.choice { text-align: left; display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; padding: 14px 16px; background: transparent; border: 1px solid var(--line); border-radius: var(--r); transition: border-color .15s, background .15s; }
+.choice:hover { border-color: var(--jade); background: var(--jade-soft); }
+.choice .k { font-family: var(--f-display); font-weight: 700; font-size: 17px; color: var(--jade); line-height: 1.4; }
+.choice .t { font-weight: 600; }
+.choice .s { display: block; font-size: 13px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.result { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; background: var(--bg); border-radius: var(--r); }
+.result p { margin: 0; }
+.result.bad { box-shadow: inset 3px 0 0 var(--bad); }
+.deltas { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--f-mono); font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; font-variant-numeric: tabular-nums; }
+.chip.up { color: var(--good); }
+.chip.down { color: var(--bad); }
+.stamp { position: absolute; right: clamp(14px, 4vw, 34px); top: 64px; width: 84px; height: 84px; border: 3px solid var(--seal); border-radius: 50%; color: var(--seal); font-family: var(--f-display); font-weight: 700; display: grid; place-items: center; text-align: center; font-size: 15px; line-height: 1.15; transform: rotate(-14deg); opacity: .85; animation: stamp .35s cubic-bezier(.2,1.6,.4,1) both; pointer-events: none; }
+.stamp::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--seal); border-radius: 50%; }
+@keyframes stamp { from { transform: rotate(-14deg) scale(1.8); opacity: 0; } to { transform: rotate(-14deg) scale(1); opacity: .85; } }
+
+/* 일정(행동) */
+.agenda { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 18px clamp(18px, 4vw, 24px); display: flex; flex-direction: column; gap: 14px; }
+.agenda-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.agenda-head h3 { font-size: 19px; }
+.pc { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.pc i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--jade); }
+.pc i.on { background: var(--jade); }
+.acts { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.act { text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: transparent; display: flex; flex-direction: column; gap: 2px; transition: border-color .15s, background .15s; }
+.act:hover:not(:disabled) { border-color: var(--jade); background: var(--jade-soft); }
+.act:disabled { opacity: .42; cursor: not-allowed; }
+.act b { font-size: 14px; }
+.act span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.next { align-self: flex-end; padding: 12px 22px; border: 0; border-radius: var(--r); background: var(--ink); color: var(--sheet); font-weight: 700; font-size: 15px; }
+.next:hover { background: var(--jade); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* 일지 */
+.log { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 18px clamp(18px, 4vw, 24px); }
+.log h3 { font-size: 19px; margin-bottom: 10px; }
+.log ol { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+.log li { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.log li:first-child { border-top: 0; }
+.log li .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+.log li.news .what { color: var(--muted); }
+.log li.news .what::before { content: "언론 · "; font-weight: 600; }
+.log li.big .what { font-weight: 700; }
+@media (max-width: 480px) { .log li { grid-template-columns: 1fr; gap: 0; } }
+
+/* 취임 준비 */
+.setup { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(22px, 5vw, 44px); display: flex; flex-direction: column; gap: 26px; }
+.setup-intro { max-width: 62ch; }
+.setup-intro h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.25; margin-bottom: 10px; }
+.setup-intro p { margin: 0; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 10px; }
+.namerow { display: flex; gap: 8px; flex-wrap: wrap; }
+.namerow input { flex: 1 1 200px; min-width: 0; font: inherit; font-family: var(--f-display); font-size: 22px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); }
+.ghost { padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--r); background: transparent; font-size: 13.5px; }
+.ghost:hover { border-color: var(--jade); }
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.opt { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; transition: border-color .15s, background .15s; }
+.opt input { position: absolute; opacity: 0; pointer-events: none; }
+.opt:has(input:checked) { border-color: var(--jade); background: var(--jade-soft); box-shadow: inset 0 0 0 1px var(--jade); }
+.opt b { font-size: 15px; }
+.opt span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.opt em { font-style: normal; font-family: var(--f-mono); font-size: 11.5px; color: var(--jade); }
+.oath { align-self: flex-start; padding: 14px 28px; border: 0; border-radius: var(--r); background: var(--seal); color: #fff; font-family: var(--f-display); font-weight: 700; font-size: 18px; }
+.oath:hover { filter: brightness(1.08); }
+
+/* 퇴임 / 종료 */
+.ending { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(22px, 5vw, 44px); display: flex; flex-direction: column; gap: 20px; }
+.ending .kind { color: var(--seal); font-weight: 700; letter-spacing: .1em; font-size: 12.5px; }
+.ending h2 { font-size: clamp(28px, 5vw, 44px); line-height: 1.2; }
+.ending p { margin: 0; max-width: 62ch; }
+.verdict { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+.grade { width: 108px; height: 108px; border: 4px double var(--seal); border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-size: 52px; font-weight: 700; color: var(--seal); transform: rotate(-8deg); flex: none; }
+.verdict-txt { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.verdict-txt b { font-family: var(--f-display); font-size: 22px; }
+.finals { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.finals div { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: flex; flex-direction: column; }
+.finals b { font-family: var(--f-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.bigspark { width: 100%; height: 120px; display: block; }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const ri = (a, b) => Math.floor(rand(a, b + 1));
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  const NAMES = { ap: "지지율", ec: "경제", se: "안보", we: "민생", as: "국회", tr: "국고", fat: "피로" };
+  const TERM = 20;
+  const ELECTION_Q = 4; // 2028년 2분기 총선
+  const SURNAMES = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "한", "서", "문"];
+  const GIVEN = ["민준", "서연", "도윤", "하은", "지호", "수아", "현우", "지민", "태경", "유진", "은솔", "건우", "다인"];
+  const randName = () => pick(SURNAMES) + pick(GIVEN);
+
+  const PARTIES = [
+    { id: "wave", name: "새물결당", desc: "복지와 분배를 앞세우는 진보 정당", fx: { we: 6, ec: -3 }, tag: "민생 +6 · 경제 −3" },
+    { id: "road", name: "한길당", desc: "성장과 안보를 중시하는 보수 정당", fx: { se: 6, we: -3 }, tag: "안보 +6 · 민생 −3" },
+    { id: "mid", name: "중도연합", desc: "의석은 적지만 양쪽과 말이 통하는 정당", fx: { as: 8, ap: -4 }, tag: "국회 +8 · 지지율 −4" },
+  ];
+  const BGS = [
+    { id: "econ", name: "경제학자", desc: "전 한국은행 부총재. 숫자에 강하다.", fx: { ec: 8 }, tag: "경제 +8 · 추경·감세 효과 1.5배" },
+    { id: "gen", name: "육군 대장 출신", desc: "합참의장을 지냈다. 말보다 행동.", fx: { se: 12, as: -5 }, tag: "안보 +12 · 국회 −5" },
+    { id: "law", name: "인권변호사", desc: "노동 현장에서 이름을 알렸다.", fx: { we: 8, ap: 5, se: -5 }, tag: "민생 +8 · 지지율 +5 · 안보 −5" },
+    { id: "ceo", name: "기업인", desc: "물류 대기업을 일군 창업주.", fx: { ec: 5, tr: 20, we: -5 }, tag: "경제 +5 · 국고 +20조 · 민생 −5" },
+  ];
+
+  // ───────── 사건 카드 ─────────
+  // fx: 즉시 효과, risk: 확률적 역풍, flag: 이후 사건 조건, chain: n분기 뒤 후속 사건
+  const EVENTS = [
+    { id: "cabinet", fixed: 0, dept: "비서실장", title: "초대 국무총리를 지명해야 합니다",
+      body: "취임 첫날입니다. 국무총리 인선은 정부의 첫인상을 결정합니다. 국회 인사청문회는 다음 달로 잡혀 있습니다.",
+      choices: [
+        { t: "야당 출신 원로 정치인", s: "협치의 신호. 지지층은 서운해할 수 있다", fx: { as: 10, ap: 2, we: -1 }, log: "야당 출신 원로를 총리로 지명했다. 청문회는 무난히 통과했다." },
+        { t: "선거 캠프의 최측근", s: "손발은 잘 맞겠지만…", fx: { as: -6, ap: -2, ec: 1 }, flag: "crony", chain: { id: "crony1", after: 3 }, log: "캠프 최측근을 총리로 지명했다. '회전문 인사'라는 비판이 나왔다." },
+        { t: "무당파 경제 관료", s: "정치색 없는 실무형", fx: { ec: 4, as: 2 }, log: "기획재정부 차관 출신 관료를 총리로 지명했다." },
+      ] },
+    { id: "typhoon", dept: "행정안전부", title: "태풍 '미르'가 남부에 상륙했습니다",
+      body: "최대 순간풍속 초속 48m. 남해안 3개 시·군이 침수됐고 이재민 4,200명이 발생했습니다.",
+      choices: [
+        { t: "특별재난지역 선포, 예비비 투입", fx: { tr: -8, we: 5, ap: 4 }, log: "특별재난지역을 선포하고 예비비 8조 원을 풀었다." },
+        { t: "현장을 직접 방문", fx: { ap: 2, we: 1 }, risk: { p: 0.35, fx: { ap: -7 }, log: "장화를 신고 웃는 사진이 퍼지며 '보여주기 행정' 논란이 일었다." }, log: "피해 현장을 찾아 이재민을 만났다." },
+        { t: "지자체 대응에 맡긴다", fx: { ap: -6, we: -4 }, log: "중앙정부가 뒷짐을 졌다는 비판이 쏟아졌다." },
+      ] },
+    { id: "chip", dept: "산업통상자원부", title: "이웃 세리아국이 반도체 소재 수출을 막았습니다",
+      body: "세리아 정부가 불화수소 등 핵심 소재 3종의 수출 심사를 강화했습니다. 국내 반도체 업계는 재고가 두 달분이라고 합니다.",
+      choices: [
+        { t: "보복 관세로 맞대응", fx: { ap: 6, ec: -6, se: 2 }, log: "세리아산 수입품에 보복 관세를 매겼다. 여론은 환호했지만 수출 지표가 꺾였다." },
+        { t: "물밑 외교로 협상", fx: { ec: -1, ap: -3 }, risk: { p: 0.4, fx: { ec: -4 }, log: "협상은 지지부진했다." }, log: "통상교섭본부장을 특사로 보냈다. '굴욕 외교' 비판도 나왔다." },
+        { t: "소재 국산화에 예산 투입", fx: { tr: -12, ec: 3 }, chain: { id: "chip2", after: 4 }, log: "소재·부품 국산화에 12조 원을 투입하기로 했다." },
+      ] },
+    { id: "chip2", chainOnly: true, dept: "산업통상자원부", title: "소재 국산화가 결실을 맺었습니다",
+      body: "국내 기업이 고순도 불화수소 양산에 성공했습니다. 세리아 의존도가 90%에서 30%로 떨어졌습니다.",
+      choices: [
+        { t: "성과를 대대적으로 알린다", fx: { ap: 6, ec: 5 }, log: "소재 독립 기념 행사를 열었다." },
+        { t: "조용히 기업에 공을 돌린다", fx: { ap: 3, ec: 6, as: 2 }, log: "공을 기업과 연구진에 돌렸다." },
+      ] },
+    { id: "housing", dept: "국토교통부", title: "수도권 아파트값이 1년 새 18% 올랐습니다",
+      body: "무주택 청년들 사이에서 '영끌'과 '벼락거지'라는 말이 다시 돌고 있습니다. 대출 금리는 4%대입니다.",
+      choices: [
+        { t: "대출 규제를 강화한다", fx: { we: 3, ec: -3, ap: 1 }, log: "주택담보대출 한도를 조였다. 거래가 얼어붙었다." },
+        { t: "신도시 공급 확대", fx: { tr: -10, we: 2 }, chain: { id: "housing2", after: 5 }, log: "수도권 신도시 3곳, 25만 호 공급 계획을 발표했다." },
+        { t: "보유세를 강화한다", fx: { tr: 8, ap: -5, we: 2 }, log: "종합부동산세율을 올렸다. 강남 민심이 들끓었다." },
+      ] },
+    { id: "housing2", chainOnly: true, dept: "국토교통부", title: "신도시 첫 입주가 시작됐습니다",
+      body: "공급 확대 발표 이후 집값 상승률이 3%대로 내려왔습니다. 첫 입주 단지의 청약 경쟁률은 41대 1이었습니다.",
+      choices: [{ t: "입주 현장을 방문한다", fx: { we: 6, ap: 5 }, log: "신도시 첫 입주민에게 열쇠를 건넸다." }] },
+    { id: "doctors", dept: "보건복지부", title: "전공의들이 집단 사직서를 냈습니다",
+      body: "의대 정원 확대 방침에 반발한 전공의 9천여 명이 병원을 떠났습니다. 응급실 일부가 문을 닫았습니다.",
+      choices: [
+        { t: "정원 확대를 강행한다", fx: { we: 4, ap: -2 }, risk: { p: 0.45, fx: { we: -8, ap: -5 }, log: "의료 공백이 석 달 넘게 이어졌다." }, log: "원칙대로 정원 확대를 밀어붙였다." },
+        { t: "방침을 철회한다", fx: { ap: -4, we: -2 }, log: "정원 확대를 백지화했다. '의사 집단에 졌다'는 비판이 나왔다." },
+        { t: "의·정 대화기구를 만든다", fx: { as: 3, we: -1, ap: 1 }, log: "의료계와 정부가 참여하는 협의체를 꾸렸다." },
+      ] },
+    { id: "missile", dept: "국가안보실", title: "북방 카르덴 연방이 중거리 미사일을 쐈습니다",
+      body: "오전 6시 12분 발사, 비행거리 1,100km. 동해상 배타적경제수역 바깥에 떨어졌습니다. NSC 상임위가 소집됐습니다.",
+      choices: [
+        { t: "강경 성명과 연합훈련", fx: { se: 6, ap: 3, ec: -2 }, log: "규탄 성명을 내고 서방동맹과 대규모 연합훈련을 벌였다." },
+        { t: "특사를 보내 대화를 제안", fx: {}, risk: { p: 0.5, fx: { se: -6, ap: -5 }, log: "특사는 빈손으로 돌아왔다. '저자세'라는 비판이 쏟아졌다.", alt: { fx: { se: 8, ap: 7 }, log: "특사가 군사 핫라인 복원 합의를 이끌어냈다." } }, log: "대통령 특사를 카르덴 수도로 보냈다." },
+        { t: "상황을 지켜본다", fx: { se: -4, ap: -3 }, log: "공식 대응을 자제했다. 안이하다는 지적이 나왔다." },
+      ] },
+    { id: "crony1", chainOnly: true, dept: "민정수석", title: "총리 주변 비리 의혹이 보도됐습니다",
+      body: "한 일간지가 총리 가족 회사가 공공기관 용역을 수의계약으로 따냈다고 보도했습니다. 야당은 특검을 요구합니다.",
+      choices: [
+        { t: "특검을 수용한다", fx: { as: 6, ap: -3 }, log: "특검을 받아들였다. 총리는 자진 사퇴했다." },
+        { t: "정치 공세로 규정하고 감싼다", fx: { ap: -6, as: -8 }, chain: { id: "crony2", after: 2 }, log: "'근거 없는 정치 공세'라며 총리를 감쌌다." },
+        { t: "즉시 경질한다", fx: { ap: 3, as: 2 }, log: "보도 사흘 만에 총리를 경질했다." },
+      ] },
+    { id: "crony2", chainOnly: true, dept: "민정수석", title: "은폐 정황이 담긴 녹취록이 나왔습니다",
+      body: "총리 비서실이 감사원 조사를 막으려 한 녹취록이 공개됐습니다. 광화문에 촛불이 다시 켜졌습니다.",
+      choices: [
+        { t: "대국민 사과", fx: { ap: -8, as: 4 }, log: "고개를 숙였다. '늦은 사과'라는 반응이 많았다." },
+        { t: "끝까지 버틴다", fx: { ap: -14, as: -10 }, log: "사과를 거부했다. 여당 내부에서도 이탈표가 나오기 시작했다." },
+      ] },
+    { id: "birth", dept: "저출산고령사회위원회", title: "합계출산율이 0.68명으로 떨어졌습니다",
+      body: "역대 최저치입니다. 이대로라면 2070년 인구는 3,700만 명으로 줄어듭니다.",
+      choices: [
+        { t: "출산 1인당 1억 원 지급", fx: { tr: -20, we: 5, ap: 5 }, log: "파격적인 출산지원금을 발표했다. 재원 논란이 뒤따랐다." },
+        { t: "주거·보육 패키지", fx: { tr: -10, we: 4, ap: 1 }, log: "신혼부부 공공임대와 0세 반 확대를 묶은 대책을 내놨다." },
+        { t: "이민 문호를 넓힌다", fx: { ec: 5, ap: -5, we: -1 }, log: "숙련 외국인력 비자를 대폭 늘렸다. 찬반이 갈렸다." },
+      ] },
+    { id: "ai", dept: "과학기술정보통신부", title: "국가 AI 전략을 정해야 합니다",
+      body: "주요국이 AI 반도체와 데이터센터에 수십조 원을 쏟고 있습니다. 우리 기업들은 전력과 인력이 부족하다고 호소합니다.",
+      choices: [
+        { t: "국가 AI 클러스터 조성", fx: { tr: -15, ec: 3 }, chain: { id: "ai2", after: 5 }, log: "남부에 국가 AI 클러스터를 짓기로 했다." },
+        { t: "규제를 풀어 민간에 맡긴다", fx: { ec: 3, we: -1 }, log: "AI 규제 샌드박스를 전면 도입했다." },
+        { t: "일자리 보호법을 먼저", fx: { we: 4, ec: -3, ap: 2 }, log: "AI 도입 시 고용 영향 평가를 의무화했다." },
+      ] },
+    { id: "ai2", chainOnly: true, dept: "과학기술정보통신부", title: "AI 반도체 수출이 사상 최대를 기록했습니다",
+      body: "클러스터 입주 기업들의 AI 가속기 수출이 분기 300억 달러를 넘었습니다.",
+      choices: [{ t: "후속 투자를 약속한다", fx: { ec: 8, tr: 12, ap: 4 }, log: "AI 반도체 수출 신기록. 세수가 크게 늘었다." }] },
+    { id: "wage", dept: "고용노동부", title: "내년 최저임금을 결정할 시기입니다",
+      body: "노동계는 시급 13,000원, 경영계는 동결을 요구합니다. 현재 시급은 10,320원입니다.",
+      choices: [
+        { t: "대폭 인상 (12.5%)", fx: { we: 6, ec: -4, ap: 2 }, log: "최저임금을 12.5% 올렸다. 자영업자들의 반발이 컸다." },
+        { t: "동결", fx: { ec: 3, we: -4, ap: -3 }, log: "최저임금을 동결했다. 노동계가 총파업을 예고했다." },
+        { t: "물가 수준만큼 (3.1%)", fx: { we: 1, ec: 1 }, log: "물가 상승률만큼 올렸다." },
+      ] },
+    { id: "nuke", dept: "산업통상자원부", title: "에너지 정책 방향을 정해야 합니다",
+      body: "전력 수요가 AI 데이터센터 때문에 해마다 5%씩 늘고 있습니다. 석탄발전 감축 약속 시한도 다가옵니다.",
+      choices: [
+        { t: "신규 원전 4기 건설", fx: { tr: -10, ap: -2, ec: 2 }, chain: { id: "nuke2", after: 6 }, log: "신규 원전 4기 건설을 확정했다." },
+        { t: "재생에너지에 집중", fx: { tr: -12, we: 2, ap: 3, ec: -1 }, log: "해상풍력과 태양광 투자를 늘렸다." },
+        { t: "결정을 다음 정부로 넘긴다", fx: { ec: -2, as: 1 }, log: "에너지 결정을 미뤘다." },
+      ] },
+    { id: "nuke2", chainOnly: true, dept: "산업통상자원부", title: "첫 신규 원전이 가동을 시작했습니다",
+      body: "전력 예비율이 15%로 회복됐습니다. 산업용 전기요금 인상 압박이 줄었습니다.",
+      choices: [{ t: "준공식에 참석한다", fx: { ec: 6, ap: 2 }, log: "신규 원전 1호기가 상업 운전에 들어갔다." }] },
+    { id: "bridge", dept: "행정안전부", title: "출근길 고가도로가 무너졌습니다",
+      body: "준공 31년 된 고가도로 상판이 내려앉아 차량 7대가 추락했습니다. 사망 5명, 부상 19명입니다.",
+      choices: [
+        { t: "대국민 사과와 전국 안전점검", fx: { ap: 3, tr: -6, we: 3 }, log: "직접 사과하고 노후 교량 전수 점검을 지시했다." },
+        { t: "책임자를 엄중 문책", fx: { ap: 1, as: -2 }, log: "장관과 지자체장 문책을 지시했다." },
+        { t: "'정쟁화를 경계한다'고 말한다", fx: { ap: -8, we: -2 }, log: "참사 이틀 뒤 '정쟁화 경계'를 언급해 거센 역풍을 맞았다." },
+      ] },
+    { id: "olympic", dept: "문화체육관광부", title: "2036 하계올림픽 유치 제안이 왔습니다",
+      body: "국제올림픽위원회가 공동 개최 후보로 우리 수도를 거론했습니다. 유치 비용은 약 15조 원으로 추산됩니다.",
+      choices: [
+        { t: "유치에 뛰어든다", fx: { tr: -15, ap: 5, ec: 2 }, chain: { id: "olympic2", after: 4 }, log: "올림픽 유치 신청서를 냈다." },
+        { t: "재정 부담으로 사양", fx: { ap: -1, tr: 0 }, log: "올림픽 유치를 사양했다." },
+      ] },
+    { id: "olympic2", chainOnly: true, dept: "문화체육관광부", title: "IOC 총회 결과가 발표됩니다",
+      body: "로잔에서 개최지 투표가 진행 중입니다.",
+      choices: [{ t: "결과를 기다린다", fx: {}, risk: { p: 0.45, fx: { ap: -6 }, log: "2차 투표에서 탈락했다. 15조 원은 어디로 갔냐는 비판이 나왔다.", alt: { fx: { ap: 10, ec: 4 }, log: "올림픽 유치에 성공했다! 시청 광장이 들썩였다." } }, log: "IOC 총회 결과가 나왔다." }] },
+    { id: "gaffe", cond: (s) => s.fat >= 60, w: 3, repeat: true, dept: "홍보수석", title: "어제 발언이 논란이 되고 있습니다",
+      body: "지방 간담회에서 피곤한 기색으로 한 농담이 짧은 영상으로 잘려 퍼지고 있습니다. 조회수 900만 회입니다.",
+      choices: [
+        { t: "곧바로 사과한다", fx: { ap: -2 }, log: "실언에 대해 사과했다." },
+        { t: "'맥락이 잘렸다'고 해명", fx: { ap: -2 }, risk: { p: 0.5, fx: { ap: -5 }, log: "해명이 오히려 불을 붙였다." }, log: "대변인이 맥락을 설명했다." },
+        { t: "대응하지 않는다", fx: { ap: -6, as: -2 }, log: "논란에 대응하지 않았다." },
+      ] },
+    { id: "budget", cond: (s) => s.as < 40, w: 2, repeat: true, dept: "정무수석", title: "국회가 예산안 처리를 거부하고 있습니다",
+      body: "야당이 '대통령 공약 예산'을 전액 삭감하겠다며 본회의를 보이콧하고 있습니다. 법정 처리 시한까지 열흘 남았습니다.",
+      choices: [
+        { t: "공약 예산을 양보한다", fx: { as: 8, we: -3, ap: -1 }, log: "핵심 공약 예산 일부를 포기하고 예산안을 통과시켰다." },
+        { t: "시행령으로 우회한다", fx: { as: -8, ap: -3, we: 2 }, log: "시행령 개정으로 정책을 밀어붙였다. '입법부 무시'라는 반발이 나왔다." },
+        { t: "야당 대표와 만찬", fx: { as: 2 }, risk: { p: 0.4, fx: { as: -3 }, log: "만찬은 사진만 남기고 끝났다.", alt: { fx: { as: 7, ap: 2 }, log: "만찬에서 극적인 예산 합의가 나왔다." } }, log: "야당 대표를 관저 만찬에 초청했다." },
+      ] },
+    { id: "recession", cond: (s) => s.ec < 42, w: 3, repeat: true, dept: "기획재정부", title: "두 분기 연속 마이너스 성장입니다",
+      body: "기술적 경기 침체에 들어섰습니다. 실업률은 4.8%, 소비자심리지수는 84입니다.",
+      choices: [
+        { t: "대규모 재정 투입", fx: { tr: -20, ec: 7, we: 3 }, log: "20조 원 규모 경기 부양책을 내놓았다." },
+        { t: "규제 완화와 구조개혁", fx: { ec: 2, ap: -4 }, chain: { id: "reform2", after: 4 }, log: "노동·규제 구조개혁에 착수했다. 당장은 아팠다." },
+        { t: "중앙은행에 금리 인하 요청", fx: { ec: 4, we: -2 }, risk: { p: 0.3, fx: { ap: -5 }, log: "'중앙은행 독립성 침해' 논란이 일었다." }, log: "금리 인하 필요성을 공개적으로 언급했다." },
+      ] },
+    { id: "reform2", chainOnly: true, dept: "기획재정부", title: "구조개혁 효과가 지표로 나타납니다",
+      body: "기업 투자가 전년 대비 11% 늘었습니다. IMF가 성장률 전망을 상향 조정했습니다.",
+      choices: [{ t: "개혁을 이어간다", fx: { ec: 9, ap: 3 }, log: "구조개혁의 결실이 나타났다." }] },
+    { id: "youth", cond: (s) => s.we < 42, w: 3, repeat: true, dept: "고용노동부", title: "청년들이 광장에 모였습니다",
+      body: "'일자리도 집도 없다'는 손팻말을 든 청년 3만 명이 모였습니다. 청년 고용률은 41%입니다.",
+      choices: [
+        { t: "청년 일자리 예산 증액", fx: { tr: -10, we: 5, ap: 3 }, log: "청년 일자리 10만 개 예산을 편성했다." },
+        { t: "직접 광장에 나가 듣는다", fx: { ap: 3, we: 1, fat: 10 }, log: "예고 없이 광장을 찾아 청년들의 이야기를 들었다." },
+        { t: "불법 집회로 규정", fx: { ap: -9, se: 1 }, log: "경찰이 해산에 나섰다. 영상이 퍼지며 민심이 돌아섰다." },
+      ] },
+    { id: "summit", dept: "외교부", title: "서방동맹 정상회의에 초청받았습니다",
+      body: "올해 의제는 공급망과 해양 안보입니다. 의장국은 우리를 '핵심 파트너'로 소개하겠다고 합니다.",
+      choices: [
+        { t: "참석해 동맹을 다진다", fx: { se: 5, ec: 2, fat: 15 }, log: "정상회의에 참석해 공급망 협정에 서명했다." },
+        { t: "국내 현안을 이유로 불참", fx: { we: 1, se: -3 }, log: "정상회의에 총리를 대신 보냈다." },
+      ] },
+    { id: "cyber", dept: "국가정보원", title: "주요 은행 전산망이 해킹당했습니다",
+      body: "시중은행 4곳의 인터넷뱅킹이 9시간째 마비입니다. 해외 서버를 경유한 공격으로 보입니다.",
+      choices: [
+        { t: "사이버안보사령부 창설", fx: { tr: -8, se: 6 }, log: "사이버안보사령부를 창설했다." },
+        { t: "배후를 공개 지목", fx: { se: 2, ap: 2 }, risk: { p: 0.4, fx: { se: -5, ap: -4 }, log: "지목한 배후가 틀린 것으로 드러났다." }, log: "카르덴 연방 해커 조직을 배후로 지목했다." },
+        { t: "조용히 복구에 집중", fx: { ap: -2, we: -1 }, log: "조사 결과 발표를 미뤘다." },
+      ] },
+    { id: "pension", dept: "보건복지부", title: "국민연금 기금 고갈 시점이 앞당겨졌습니다",
+      body: "재정추계 결과 기금이 2054년에 바닥납니다. 보험료율은 9%로 26년째 그대로입니다.",
+      choices: [
+        { t: "더 내고 덜 받는 개혁", fx: { tr: 12, ap: -8, we: -2 }, log: "보험료율 13%로 인상, 소득대체율 조정. 지지율이 크게 빠졌다." },
+        { t: "사회적 대타협 위원회", fx: { as: 3, ap: -1 }, log: "여야·노사가 참여하는 연금개혁 위원회를 출범시켰다." },
+        { t: "다음 정부 과제로 미룬다", fx: { ap: 1, tr: -6 }, log: "연금 개혁을 미뤘다. 미래 세대 부담이 커졌다." },
+      ] },
+    { id: "kculture", dept: "문화체육관광부", title: "우리 드라마가 세계 1위에 올랐습니다",
+      body: "글로벌 스트리밍 비영어권 시청 순위 6주 연속 1위입니다. 외국인 관광객 문의가 폭증했습니다.",
+      choices: [
+        { t: "콘텐츠 예산을 늘린다", fx: { tr: -5, ec: 3, ap: 3 }, log: "K-콘텐츠 펀드 5조 원을 조성했다." },
+        { t: "업계 자율에 맡긴다", fx: { ec: 2 }, log: "축하 메시지만 냈다." },
+      ] },
+    { id: "fishing", cond: (s) => s.se < 50, w: 2, dept: "해양수산부", title: "우리 어선이 서해에서 나포됐습니다",
+      body: "조업 중이던 어선 2척과 선원 14명이 이웃 해경에 끌려갔습니다. 경계선 해석이 엇갈립니다.",
+      choices: [
+        { t: "해경 전력을 증강", fx: { tr: -6, se: 5 }, log: "해경 함정 12척 추가 배치를 결정했다." },
+        { t: "외교 채널로 항의", fx: { se: 1, ap: -2 }, log: "대사를 불러 항의했다. 선원들은 2주 뒤 풀려났다." },
+        { t: "해군 함정을 보낸다", fx: { se: 3, ap: 4 }, risk: { p: 0.35, fx: { se: -10, ap: -6, ec: -3 }, log: "경고 사격이 오가며 긴장이 급격히 높아졌다." }, log: "해군 구축함을 경계선 인근으로 보냈다." },
+      ] },
+    { id: "health", cond: (s) => s.fat >= 70, w: 4, repeat: true, dept: "대통령 주치의", title: "건강 이상설이 퍼지고 있습니다",
+      body: "공식 일정 중 휘청이는 모습이 포착됐습니다. 주치의는 과로와 수면 부족이라고 보고합니다.",
+      choices: [
+        { t: "진료 기록을 공개한다", fx: { ap: 2, fat: -10 }, log: "건강검진 결과를 공개해 의혹을 잠재웠다." },
+        { t: "일주일간 일정을 비운다", fx: { fat: -35, ap: -1 }, log: "일주일간 공식 일정을 취소하고 쉬었다." },
+      ] },
+    { id: "family", dept: "민정수석", title: "대통령 가족 관련 의혹이 제기됐습니다",
+      body: "대통령 배우자가 대표로 있던 전시기획사가 대기업 후원을 받았다는 보도입니다. 위법성은 아직 불분명합니다.",
+      choices: [
+        { t: "사과하고 감찰에 맡긴다", fx: { ap: -3, as: 2 }, log: "가족 문제에 대해 사과하고 특별감찰관 조사를 받겠다고 했다." },
+        { t: "언론사를 고소한다", fx: { ap: -6, as: -3 }, risk: { p: 0.4, fx: { ap: -4 }, log: "'언론 재갈 물리기'라는 비판이 커졌다." }, log: "보도한 언론사를 명예훼손으로 고소했다." },
+      ] },
+    { id: "virus", dept: "질병관리청", title: "신종 호흡기 감염병이 번지고 있습니다",
+      body: "하루 확진자가 3,000명을 넘었습니다. 치명률은 0.4%로 추정됩니다. 병상 가동률은 71%입니다.",
+      choices: [
+        { t: "강력한 거리두기", fx: { ec: -8, we: 2, ap: 3 }, log: "사회적 거리두기 최고 단계를 시행했다. 자영업자 피해가 컸다." },
+        { t: "백신 선구매에 투자", fx: { tr: -12, we: 4, ap: 3 }, log: "백신 4,000만 회분을 선구매했다." },
+        { t: "자율 방역", fx: { ec: -1 }, risk: { p: 0.5, fx: { we: -10, ap: -8 }, log: "확산세가 꺾이지 않아 병상이 바닥났다." }, log: "자율 방역 기조를 유지했다." },
+      ] },
+    { id: "exports", cond: (s) => s.ec >= 60, w: 2, dept: "기획재정부", title: "세수가 예상보다 30조 원 더 걷혔습니다",
+      body: "수출 호황으로 법인세가 크게 늘었습니다. 쓰임새를 두고 의견이 갈립니다.",
+      choices: [
+        { t: "전 국민 민생지원금", fx: { tr: 10, we: 5, ap: 5 }, log: "초과 세수로 민생지원금을 지급했다." },
+        { t: "나랏빚을 갚는다", fx: { tr: 30, ap: -1 }, log: "초과 세수를 전부 국채 상환에 썼다." },
+        { t: "법인세를 내린다", fx: { tr: 18, ec: 4, we: -2 }, log: "법인세 최고세율을 2%p 내렸다." },
+      ] },
+    { id: "strike", dept: "고용노동부", title: "화물연대가 총파업에 들어갔습니다",
+      body: "안전운임제 재도입을 요구하고 있습니다. 항만 물동량이 평소의 30%로 줄었습니다.",
+      choices: [
+        { t: "업무개시명령 발동", fx: { ec: 2, ap: 1, we: -4 }, log: "업무개시명령을 내려 파업을 끝냈다." },
+        { t: "안전운임제 재도입", fx: { we: 4, ec: -3, as: 1 }, log: "안전운임제를 3년 한시로 다시 도입했다." },
+      ] },
+    { id: "border", cond: (s) => s.se < 35, w: 3, repeat: true, dept: "국가안보실", title: "접경지역에서 포격이 있었습니다",
+      body: "카르덴 연방 측에서 날아온 포탄 6발이 비무장지대 남쪽에 떨어졌습니다. 인명 피해는 없습니다.",
+      choices: [
+        { t: "비례 대응 사격", fx: { se: 4, ap: 3 }, risk: { p: 0.35, fx: { se: -8, ec: -4 }, log: "교전이 하루 더 이어지며 금융시장이 출렁였다." }, log: "같은 수의 대응 사격을 했다." },
+        { t: "국방예산 긴급 증액", fx: { tr: -10, se: 8 }, log: "국방예산 10조 원 긴급 증액을 결정했다." },
+        { t: "유엔에 제소한다", fx: { se: 1, ap: -2 }, log: "유엔 안보리 소집을 요청했다." },
+      ] },
+    { id: "farewell", fixed: TERM - 1, dept: "비서실장", title: "임기의 마지막 분기입니다",
+      body: "퇴임까지 석 달. 마지막 대국민 연설문 초안이 올라왔습니다. 어떤 대통령으로 기억되고 싶으십니까?",
+      choices: [
+        { t: "성과를 정리해 알린다", fx: { ap: 2 }, log: "5년간의 성과를 정리한 퇴임 연설을 했다." },
+        { t: "못다 한 일을 사과한다", fx: { ap: 4, as: 2 }, log: "지키지 못한 약속을 하나하나 꼽으며 사과했다." },
+        { t: "측근들을 특별사면한다", fx: { ap: -10, as: -5 }, log: "임기 말 측근 특별사면을 단행했다. 거센 비판이 이어졌다." },
+      ] },
+  ];
+  const EV = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
+  const QUIET = { id: "quiet", dept: "비서실장", title: "비교적 조용한 분기입니다", body: "큰 현안 없이 지나가고 있습니다. 이럴 때 무엇에 힘을 싣겠습니까?",
+    choices: [
+      { t: "경제 현장을 돈다", fx: { ec: 2, fat: 8 }, log: "산업단지와 전통시장을 차례로 방문했다." },
+      { t: "복지 사각지대를 점검한다", fx: { we: 2, fat: 8 }, log: "복지 사각지대 실태 점검을 지시했다." },
+      { t: "참모들과 쉬어 간다", fx: { fat: -15 }, log: "모처럼 참모들과 등산을 했다." },
+    ] };
+
+  // ───────── 일정(행동) ─────────
+  const ACTIONS = [
+    { id: "speech", name: "대국민 담화", desc: "TV 생중계로 국정 방향을 직접 설명", run(g) { const n = g.used.speech || 0; const v = Math.max(1, 5 - n); return { fx: { ap: v, fat: 10 }, log: n >= 3 ? "또 담화를 했다. 반응은 시들했다." : "대국민 담화로 정책을 직접 설명했다." }; } },
+    { id: "trip", name: "해외 순방", desc: "정상외교로 안보·수출 협력", run(g) { return { fx: { se: 3, ec: 2, tr: -2, fat: 18, ap: ri(-1, 2) }, log: pick(["유럽 3개국을 순방했다.", "동남아 순방에서 인프라 수주를 따냈다.", "북미 정상과 회담했다."]) }; } },
+    { id: "meet", name: "여야 영수회담", desc: "야당 대표와 마주 앉는다", run(g) { return { fx: { as: 6, fat: 8 }, log: "여야 대표와 영수회담을 가졌다." }; } },
+    { id: "stim", name: "추경 편성", desc: "15조 원 · 국회 협조 45 이상 필요", run(g) {
+        const m = g.bg === "econ" ? 1.5 : 1;
+        if (g.s.as < 45) return { fx: { as: -2, ap: -1, fat: 6 }, log: "추경안이 국회에서 부결됐다.", bad: true };
+        return { fx: { we: Math.round(5 * m), ec: Math.round(2 * m), tr: -15, fat: 6 }, log: "15조 원 규모 추가경정예산이 국회를 통과했다." }; } },
+    { id: "tax", name: "감세", desc: "소득세·법인세 인하 · 국고 −10조", run(g) { const m = g.bg === "econ" ? 1.5 : 1; return { fx: { ec: Math.round(4 * m), we: -2, tr: -10, fat: 6 }, log: "감세안을 발표했다." }; } },
+    { id: "def", name: "국방력 강화", desc: "첨단 전력 도입 · 국고 −10조", run(g) { return { fx: { se: 6, tr: -10, fat: 6 }, log: "첨단 전투기와 정찰위성 도입을 승인했다." }; } },
+    { id: "rest", name: "관저 휴식", desc: "피로를 크게 덜어낸다", run(g) { return { fx: { fat: -30 }, log: "주말 동안 관저에서 쉬었다." }; } },
+  ];
+
+  // ───────── 상태 ─────────
+  let G = null;
+  const draft = { name: randName(), party: "wave", bg: "econ" };
+
+  const qLabel = (q) => { const y = 2027 + Math.floor((q + 1) / 4); const k = ((q + 1) % 4) + 1; return `${y}년 ${k}분기`; };
+
+  function newGame() {
+    const party = PARTIES.find((p) => p.id === draft.party);
+    const bg = BGS.find((b) => b.id === draft.bg);
+    G = { name: draft.name.trim() || randName(), party: party.id, bg: bg.id,
+      s: { ap: 58, ec: 50, se: 50, we: 50, as: 45, tr: 100, fat: 10 },
+      q: 0, phase: "event", cur: null, result: null, pc: 2, used: {}, seen: {}, flags: {}, queue: [], log: [], hist: [], end: null, acted: [] };
+    applyFx(party.fx); applyFx(bg.fx);
+    G.hist.push(G.s.ap);
+    addLog(`제21대 대통령 ${G.name} 취임. ${party.name} · ${bg.name} 출신.`, "big");
+    startQuarter();
+  }
+
+  function applyFx(fx) {
+    const d = {};
+    for (const [k, v] of Object.entries(fx || {})) {
+      if (!v) continue;
+      const before = G.s[k];
+      G.s[k] = k === "tr" ? Math.round(G.s[k] + v) : clamp(Math.round(G.s[k] + v));
+      d[k] = G.s[k] - before;
+    }
+    return d;
+  }
+  const mergeD = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = (a[k] || 0) + v; return a; };
+  function addLog(text, kind = "") { G.log.unshift({ when: qLabel(G.q), text, kind }); }
+
+  function pickEvent() {
+    const fixed = EVENTS.find((e) => e.fixed === G.q);
+    if (fixed) return fixed.id;
+    const qi = G.queue.findIndex((x) => x.at <= G.q);
+    if (qi >= 0) return G.queue.splice(qi, 1)[0].id;
+    const pool = EVENTS.filter((e) => e.fixed === undefined && !e.chainOnly && (e.repeat || !G.seen[e.id]) && (!e.cond || e.cond(G.s)) && G.lastEv !== e.id);
+    if (!pool.length) return "quiet";
+    const total = pool.reduce((a, e) => a + (e.w || 1), 0);
+    let r = Math.random() * total;
+    for (const e of pool) { r -= e.w || 1; if (r <= 0) return e.id; }
+    return pool[0].id;
+  }
+
+  function startQuarter() {
+    G.cur = pickEvent(); G.lastEv = G.cur; G.seen[G.cur] = true;
+    G.phase = "event"; G.result = null; G.pc = 2; G.acted = [];
+    render();
+  }
+
+  function choose(i) {
+    const ev = EV[G.cur] || QUIET;
+    const c = ev.choices[i];
+    let d = applyFx(c.fx);
+    let text = c.log; let bad = false;
+    if (c.risk) {
+      if (Math.random() < c.risk.p) { mergeD(d, applyFx(c.risk.fx)); text += " " + c.risk.log; bad = true; }
+      else if (c.risk.alt) { mergeD(d, applyFx(c.risk.alt.fx)); text += " " + c.risk.alt.log; }
+    }
+    if (c.flag) G.flags[c.flag] = true;
+    if (c.chain) G.queue.push({ id: c.chain.id, at: G.q + c.chain.after });
+    G.result = { pick: i, text, d, bad };
+    addLog(`${ev.title.replace(/습니다$|입니다$/, "")} → ${text}`);
+    G.phase = "action";
+    if (!checkEnd()) render();
+  }
+
+  function act(id) {
+    if (G.phase !== "action" || G.pc <= 0) return;
+    const a = ACTIONS.find((x) => x.id === id);
+    const r = a.run(G);
+    const d = applyFx(r.fx);
+    G.used[id] = (G.used[id] || 0) + 1; G.pc -= 1;
+    G.acted.push({ name: a.name, text: r.log, d, bad: r.bad });
+    addLog(r.log);
+    if (!checkEnd()) render();
+  }
+
+  const HEADLINES = [
+    [(s) => s.ec < 35, "\"IMF 이후 최악\"… 자영업 폐업률 사상 최고"],
+    [(s) => s.ec > 70, "코스피 사상 최고치 경신… \"골디락스 왔다\""],
+    [(s) => s.we < 35, "\"월세 내면 남는 게 없다\"… 청년 체감물가 비명"],
+    [(s) => s.we > 70, "상대적 빈곤율 OECD 평균 아래로"],
+    [(s) => s.se < 35, "접경지 주민 \"불안해서 못 살겠다\""],
+    [(s) => s.se > 70, "방산 수출 세계 5위 진입"],
+    [(s) => s.as < 30, "여야 극한 대치… 법안 처리율 역대 최저"],
+    [(s) => s.as > 70, "\"이런 국회 처음\"… 여야 민생법안 무더기 합의"],
+    [(s) => s.tr < 0, "국가채무 비율 경고등… 신용평가사 \"예의주시\""],
+    [(s) => s.fat > 75, "\"대통령 얼굴이 안 좋다\"… 참모들 일정 축소 건의"],
+  ];
+
+  function nextQuarter() {
+    if (G.phase !== "action") return;
+    const s = G.s;
+    // 국고: 경제가 좋으면 세수 증가, 나쁘면 적자
+    s.tr += Math.round((s.ec - 46) * 0.5);
+    // 지표 자연 변동
+    s.ec = clamp(s.ec + ri(-3, 2) + (s.we < 30 ? -2 : 0));
+    s.we = clamp(s.we + ri(-2, 1) + (s.ec < 35 ? -2 : 0));
+    s.se = clamp(s.se + ri(-2, 1));
+    s.fat = clamp(s.fat - 18);
+    // 지지율은 국정 지표를 따라가고, 임기가 갈수록 조금씩 깎인다
+    const target = s.ec * 0.32 + s.we * 0.32 + s.se * 0.2 + s.as * 0.16;
+    const honey = G.q < 2 ? 2 : 0;
+    s.ap = clamp(Math.round(s.ap + (target - s.ap) * 0.3 - 1 + honey + rand(-2, 2)));
+    G.hist.push(s.ap);
+    const hl = HEADLINES.filter(([c]) => c(s));
+    if (hl.length) addLog(pick(hl)[1], "news");
+    if (G.q === TERM - 1) { G.q += 1; finish("retire"); return; }
+    G.q += 1;
+    if (G.q === ELECTION_Q) election();
+    if (checkEnd()) return;
+    startQuarter();
+  }
+
+  function election() {
+    const seats = clamp(Math.round(G.s.ap * 0.85 + 12 + rand(-6, 6)), 5, 95);
+    const before = G.s.as;
+    G.s.as = seats;
+    const party = PARTIES.find((p) => p.id === G.party).name;
+    const verdict = seats >= 55 ? "압승" : seats >= 45 ? "선전" : seats >= 35 ? "패배" : "참패";
+    addLog(`제23대 총선 실시. ${party} ${verdict}. 국회 협조 ${before} → ${seats}.`, "big");
+    G.electionNote = { verdict, before, seats };
+  }
+
+  function checkEnd() {
+    const s = G.s;
+    if (s.tr <= -60) { finish("default"); return true; }
+    if (s.se <= 4) { finish("war"); return true; }
+    if (s.ap <= 15 && s.as <= 35) { finish("impeach"); return true; }
+    return false;
+  }
+
+  function finish(kind) {
+    G.phase = "over"; G.end = kind;
+    const map = { retire: "임기를 마치고 퇴임했다.", default: "국가부도 사태로 IMF 구제금융을 신청했다.", war: "안보 붕괴로 국가비상사태가 선포됐다.", impeach: "국회가 탄핵소추안을 가결했다. 직무가 정지됐다." };
+    addLog(map[kind], "big");
+    render();
+  }
+
+  function score() {
+    const s = G.s;
+    const avgAp = G.hist.reduce((a, b) => a + b, 0) / G.hist.length;
+    let v = s.ap * 0.3 + avgAp * 0.2 + (s.ec + s.we + s.se) / 3 * 0.4 + s.as * 0.05 + clamp(s.tr / 2, -20, 20) * 0.25;
+    if (G.end !== "retire") v = Math.min(v, 25);
+    const grade = v >= 66 ? "S" : v >= 58 ? "A" : v >= 50 ? "B" : v >= 42 ? "C" : v >= 30 ? "D" : "F";
+    const top = [["ec", "경제 대통령"], ["we", "서민의 대통령"], ["se", "안보 대통령"], ["as", "협치의 대통령"]].sort((a, b) => s[b[0]] - s[a[0]])[0];
+    const titles = { S: "교과서에 실릴 대통령", A: "다시 보고 싶은 대통령", B: "무난했던 5년", C: "아쉬움이 남는 대통령", D: "잊고 싶은 5년", F: "실패한 정부" };
+    return { v: Math.round(v), grade, nick: G.end === "retire" ? top[1] : "중도 하차", title: titles[grade], avgAp: Math.round(avgAp) };
+  }
+
+  // ───────── 그리기 ─────────
+  function spark(vals, h, cls, showAxis) {
+    const w = 300, pad = 4;
+    const n = Math.max(vals.length, 2);
+    const x = (i) => pad + (i / (Math.max(TERM, n - 1))) * (w - pad * 2);
+    const y = (v) => h - pad - (v / 100) * (h - pad * 2);
+    const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const last = vals[vals.length - 1];
+    const area = vals.length > 1 ? `<polygon points="${x(0)},${h - pad} ${pts} ${x(vals.length - 1)},${h - pad}" fill="var(--jade)" opacity=".12"/>` : "";
+    const grid = [25, 50, 75].map((g) => `<line x1="${pad}" x2="${w - pad}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-width="1" ${g === 50 ? "" : 'stroke-dasharray="2 3"'}/>`).join("");
+    const axis = showAxis ? [25, 50, 75].map((g) => `<text x="${w - pad}" y="${y(g) - 3}" text-anchor="end" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${g}%</text>`).join("") : "";
+    return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="지지율 추이">${grid}${area}<polyline points="${pts}" fill="none" stroke="var(--jade)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>${axis}<circle cx="${x(vals.length - 1)}" cy="${y(last)}" r="3.5" fill="var(--seal)"/></svg>`;
+  }
+
+  const chips = (d) => Object.entries(d).filter(([, v]) => v).map(([k, v]) => {
+    const good = k === "fat" ? v < 0 : v > 0;
+    const unit = k === "tr" ? "조" : "";
+    return `<span class="chip ${good ? "up" : "down"}">${NAMES[k]} ${v > 0 ? "+" : "−"}${Math.abs(v)}${unit}</span>`;
+  }).join("");
+
+  function header() {
+    const segs = Array.from({ length: TERM }, (_, i) => `<i class="${i < G.q ? "done" : i === G.q && G.phase !== "over" ? "now" : ""} ${i === ELECTION_Q ? "elect" : ""}" title="${qLabel(i)}${i === ELECTION_Q ? " · 총선" : ""}"></i>`).join("");
+    const party = PARTIES.find((p) => p.id === G.party).name;
+    const bg = BGS.find((b) => b.id === G.bg).name;
+    const left = Math.max(0, TERM - G.q);
+    return `<header class="top">
+      <h1><small>제21대 대통령 · ${party} · ${bg} 출신</small>${esc(G.name)} 정부</h1>
+      <div class="term">
+        <div class="term-head"><b>${G.phase === "over" ? "임기 종료" : qLabel(G.q)}</b><span class="mono">${G.phase === "over" ? "" : `남은 임기 ${left}분기`}</span></div>
+        <div class="segs" aria-label="임기 진행">${segs}</div>
+      </div>
+    </header>`;
+  }
+
+  function board() {
+    const s = G.s;
+    const row = (k) => { const v = s[k]; const lvl = k === "fat" ? "fat" : v < 30 ? "low" : v < 45 ? "mid" : ""; return `<div class="stat"><span class="nm">${NAMES[k]}</span><div class="bar ${lvl}"><span style="width:${v}%"></span></div><span class="v">${v}</span></div>`; };
+    const warns = [];
+    if (s.ap <= 25 && s.as <= 40) warns.push("탄핵 경고: 지지율·국회 협조 모두 위험 수준");
+    if (s.tr < -20) warns.push("국가부도 경고: 국고 −60조에서 부도");
+    if (s.se < 15) warns.push("안보 경고: 안보가 무너지기 직전");
+    if (s.fat >= 70) warns.push("과로: 실언·건강 사건이 잦아집니다");
+    return `<aside class="board" aria-label="국정 지표">
+      <div class="poll">
+        <span class="label">국정 수행 지지율</span>
+        <div class="poll-num"><strong class="mono">${s.ap}</strong><span>%</span></div>
+        ${spark(G.hist, 54, "spark", false)}
+        <span class="src">한별리서치 · 전국 성인 1,002명 · 표본오차 ±3.1%p (95% 신뢰수준)</span>
+      </div>
+      ${["ec", "we", "se", "as", "fat"].map(row).join("")}
+      <div class="treasury"><span class="nm" style="font-weight:600">국고</span><b class="${s.tr < 0 ? "neg" : ""}">${s.tr.toLocaleString("ko-KR")}조 원</b></div>
+      ${warns.length ? `<div class="warns">${warns.map((w) => `<div class="warn">${w}</div>`).join("")}</div>` : ""}
+    </aside>`;
+  }
+
+  function docCard() {
+    const ev = EV[G.cur] || QUIET;
+    const no = `대통-${2027 + Math.floor((G.q + 1) / 4)}-${String(G.q * 37 + 104).padStart(4, "0")}`;
+    const r = G.result;
+    let elect = "";
+    if (G.electionNote && G.q === ELECTION_Q) elect = `<div class="result" style="margin-bottom:18px"><span class="label">총선 결과</span><p>제23대 총선에서 여당이 <b>${G.electionNote.verdict}</b>했습니다. 국회 협조 ${G.electionNote.before} → <b>${G.electionNote.seats}</b></p></div>`;
+    return `<article class="doc" aria-live="polite">
+      <div class="doc-meta"><span><span class="cls">대외비</span> · ${ev.dept} 보고</span><span class="mono">문서번호 ${no}</span></div>
+      ${elect}
+      <h2>${ev.title}</h2>
+      <p>${ev.body}</p>
+      ${r ? `<div class="result ${r.bad ? "bad" : ""}"><span class="label">결재 사항 · ${esc(ev.choices[r.pick].t)}</span><p>${esc(r.text)}</p><div class="deltas">${chips(r.d)}</div></div><div class="stamp">결재<br>${esc(G.name.slice(0, 3))}</div>`
+        : `<div class="choices">${ev.choices.map((c, i) => `<button class="choice" data-choice="${i}"><span class="k">${"가나다"[i]}.</span><span class="t">${esc(c.t)}${c.s ? `<span class="s">${esc(c.s)}</span>` : ""}</span></button>`).join("")}</div>`}
+    </article>`;
+  }
+
+  function agenda() {
+    const on = G.phase === "action";
+    const dots = [0, 1].map((i) => `<i class="${i < G.pc ? "on" : ""}"></i>`).join("");
+    const done = G.acted.map((a) => `<div class="result ${a.bad ? "bad" : ""}"><span class="label">${a.name}</span><p>${esc(a.text)}</p><div class="deltas">${chips(a.d)}</div></div>`).join("");
+    return `<section class="agenda" aria-label="이번 분기 일정">
+      <div class="agenda-head"><h3>이번 분기 일정</h3><span class="pc">남은 일정 ${dots}</span></div>
+      ${on ? "" : `<p class="hint">위 보고서를 먼저 결재하세요.</p>`}
+      <div class="acts">${ACTIONS.map((a) => `<button class="act" data-act="${a.id}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${a.name}</b><span>${a.desc}</span></button>`).join("")}</div>
+      ${done}
+      ${on ? `<button class="next" data-next>${G.q === TERM - 1 ? "퇴임하기" : `${qLabel(G.q + 1)}로 →`}</button>` : ""}
+    </section>`;
+  }
+
+  function logBox() {
+    return `<section class="log" aria-label="국정 일지"><h3>국정 일지</h3><ol>${G.log.map((l) => `<li class="${l.kind}"><span class="when">${l.when}</span><span class="what">${esc(l.text)}</span></li>`).join("")}</ol></section>`;
+  }
+
+  function endingView() {
+    const sc = score();
+    const s = G.s;
+    const kinds = { retire: ["퇴임", "5년의 임기를 마쳤습니다"], default: ["국가부도", "나라 곳간이 바닥났습니다"], war: ["안보 붕괴", "국가비상사태가 선포됐습니다"], impeach: ["탄핵", "국회가 탄핵소추안을 가결했습니다"] };
+    const [k, h] = kinds[G.end];
+    const served = Math.min(G.q, TERM);
+    const story = G.end === "retire"
+      ? `${esc(G.name)} 대통령은 ${served}분기 임기를 모두 채우고 관저를 떠났다. 퇴임 직전 지지율은 ${s.ap}%, 임기 평균은 ${sc.avgAp}%였다.`
+      : `${esc(G.name)} 대통령은 취임 ${served}분기 만에 물러났다. 마지막 지지율은 ${s.ap}%였다.`;
+    return `<section class="ending">
+      <span class="kind">${k} · ${qLabel(Math.min(G.q, TERM - 1))}</span>
+      <h2>${h}</h2>
+      <div class="verdict"><div class="grade">${sc.grade}</div><div class="verdict-txt"><span class="label">역사의 평가</span><b>${sc.title}</b><span>별명: ${sc.nick} · 종합 ${sc.v}점</span></div></div>
+      <p>${story}</p>
+      ${spark(G.hist, 120, "bigspark", true)}
+      <div class="finals">
+        <div><span class="label">지지율</span><b>${s.ap}%</b></div>
+        <div><span class="label">경제</span><b>${s.ec}</b></div>
+        <div><span class="label">민생</span><b>${s.we}</b></div>
+        <div><span class="label">안보</span><b>${s.se}</b></div>
+        <div><span class="label">국회</span><b>${s.as}</b></div>
+        <div><span class="label">국고</span><b>${s.tr}조</b></div>
+      </div>
+      <button class="oath" data-restart>다시 출마하기</button>
+    </section>`;
+  }
+
+  function setupView() {
+    const opt = (group, o) => `<label class="opt"><input type="radio" name="${group}" id="${group}-${o.id}" value="${o.id}" ${draft[group] === o.id ? "checked" : ""}><b>${o.name}</b><span>${o.desc}</span><em>${o.tag}</em></label>`;
+    return `<header class="top"><h1><small>한별공화국 · 가상 국정 시뮬레이션</small>대통령 5년</h1></header>
+    <section class="setup">
+      <div class="setup-intro">
+        <h2>당선을 축하드립니다.<br>내일 아침 취임 선서가 있습니다.</h2>
+        <p>임기는 5년, 20분기입니다. 매 분기 보고서 한 건을 결재하고 일정 두 개를 고릅니다. 지지율과 국회 협조가 함께 바닥나면 탄핵, 국고가 −60조 원 아래로 떨어지면 국가부도입니다. 2028년 2분기에는 총선이 있습니다.</p>
+      </div>
+      <div class="field"><label class="label" for="pname">대통령 이름</label>
+        <div class="namerow"><input id="pname" maxlength="10" value="${esc(draft.name)}" autocomplete="off"><button class="ghost" data-reroll type="button">다른 이름</button></div></div>
+      <div class="field"><span class="label">소속 정당</span><div class="opts">${PARTIES.map((p) => opt("party", p)).join("")}</div></div>
+      <div class="field"><span class="label">출신</span><div class="opts">${BGS.map((b) => opt("bg", b)).join("")}</div></div>
+      <button class="oath" data-start>취임 선서</button>
+    </section>`;
+  }
+
+  function render() {
+    const app = $("#app");
+    if (!G) { app.innerHTML = setupView(); return; }
+    if (G.phase === "over") { app.innerHTML = header() + `<div class="grid">${board()}<div class="desk">${endingView()}${logBox()}</div></div>`; return; }
+    app.innerHTML = header() + `<div class="grid">${board()}<div class="desk">${docCard()}${agenda()}${logBox()}</div></div>`;
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.choice !== undefined && G && G.phase === "event") choose(+t.dataset.choice);
+    else if (t.dataset.act) act(t.dataset.act);
+    else if (t.hasAttribute("data-next")) { nextQuarter(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    else if (t.hasAttribute("data-start")) { newGame(); }
+    else if (t.hasAttribute("data-reroll")) { draft.name = randName(); const i = $("#pname"); if (i) i.value = draft.name; }
+    else if (t.hasAttribute("data-restart")) { G = null; draft.name = randName(); render(); window.scrollTo({ top: 0 }); }
+  });
+  document.addEventListener("input", (e) => { if (e.target.id === "pname") draft.name = e.target.value; });
+  document.addEventListener("change", (e) => { if (e.target.name === "party" || e.target.name === "bg") draft[e.target.name] = e.target.value; });
+
+  function start(data) {
+    if (data && data.G) { G = data.G; if (data.draft) Object.assign(draft, data.draft); }
+    render();
+  }
+  window.claude?.hot?.snapshot?.(() => ({ G, draft }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
