@@ -29,7 +29,7 @@ python -m http.server 8000
 
 그다음 브라우저에서 `http://localhost:8000/world-leader.html`을 엽니다.
 리더보드 공유, 여론 피드, 번역은 Claude 아티팩트(`db`, `user`, `sample` 기능) 안에서만 동작합니다. 그 밖에서는 브라우저에 저장된 내 기록과 기본 반응 문구로 대체됩니다.
-`#demo`, `#democamp`, `#demoend`를 주소 끝에 붙이면 미리 진행된 화면을 볼 수 있습니다.
+`#demo`, `#democamp`, `#demoend`, `#demoterm`(임기 연장 선택 직전)을 주소 끝에 붙이면 미리 진행된 화면을 볼 수 있습니다.
 
 ## 데이터 출처
 

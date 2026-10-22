@@ -513,6 +513,12 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   }
   const ISOS = Object.keys(C);
   const regime = (c) => (c.gov === "ONE" || c.gov === "MON") ? "aut" : c.fr >= 60 ? "dem" : c.fr >= 35 ? "hyb" : "aut";
+  const regOf = (c) => (G && G.reg && c.iso === G.iso) ? G.reg : regime(c);
+  const frOf = (iso) => clamp(C[iso].fr + (G && iso === G.iso ? G.frD || 0 : 0));
+  // 대통령 연임 규정(2026 헌법 기준): TERM_NONE=단임 또는 연속 재선 불가, TERM_FREE=제한 없음, 나머지=한 번 연임
+  const TERM_NONE = ["KOR", "MEX", "PHL", "PRY", "GTM", "COL", "HND", "CRI", "PAN", "PER", "CHL", "URY"];
+  const TERM_FREE = ["SLV"];
+  const MAXQ = 80; // 최장 20년
 
   const HOSTILE = { "KOR-PRK": -70, "IND-PAK": -60, "ISR-IRN": -80, "ISR-PSE": -60, "ISR-LBN": -50, "ISR-SYR": -40, "ARM-AZE": -50, "RUS-UKR": -90, "CHN-TWN": -60, "IRN-SAU": -30, "GRC-TUR": -10, "ERI-ETH": -30, "SDN-SSD": -20, "GUY-VEN": -40, "DZA-MAR": -40, "CHN-IND": -25, "CHN-JPN": -20, "IRN-USA": -70, "PRK-USA": -70, "CUB-USA": -50, "USA-VEN": -50, "AFG-PAK": -30, "CHN-PHL": -30, "JPN-PRK": -60, "CHN-VNM": -5, "KOR-JPN": 15, "USA-CAN": 25, "RUS-BLR": 40 };
   const pairKey = (a, b) => [a, b].sort().join("-");
@@ -646,7 +652,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   // fx: 지표 효과 / r: 관계 효과 {nb, rv, al} / risk: 확률적 역풍(alt=성공 시)
   const has = (g, tag) => C[g.iso].tags.includes(tag);
   const inReg = (g, ...r) => r.includes(C[g.iso].reg);
-  const isReg = (g, ...r) => r.includes(regime(C[g.iso]));
+  const isReg = (g, ...r) => r.includes(regOf(C[g.iso]));
   const EVENTS = [
     // ── 공통 고정 ──
     { id: "cabinet", fixed: "first", dept: "비서실장", title: "첫 내각을 꾸려야 합니다",
@@ -662,6 +668,21 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         { t: "성과를 정리해 알린다", fx: { ap: 2 }, log: "임기 동안의 성과를 정리한 고별 연설을 했다." },
         { t: "못다 한 일을 사과한다", fx: { ap: 4, as: 2 }, log: "지키지 못한 약속을 하나하나 꼽으며 사과했다." },
         { t: "측근들을 특별사면한다", fx: { ap: -10, as: 3 }, log: "임기 말 측근 특별사면을 단행했다. 거센 비판이 이어졌다." },
+      ] },
+    { id: "term_run", fixed: "term", term: true, dept: "비서실장", title: "다음 대선이 다가옵니다",
+      body: "임기가 1년도 남지 않았습니다. 당은 {T}의 재선 출마 여부를 묻고 있고, 일부 측근은 연임 제한을 아예 없애자고 합니다.",
+      choices: [
+        { t: "재선에 도전한다", s: "지지율이 곧 득표율이다", fx: { ap: 1 }, flag: "run", log: "재선 출마를 공식 선언했다." },
+        { t: "개헌으로 연임 제한을 없앤다", s: "의회 3분의 2와 국민투표가 필요하다", fx: {}, flag: "amend", log: "대통령 연임 제한을 없애는 개헌안을 발의했다." },
+        { t: "비상조치로 헌정을 중단한다", s: "의회를 해산하고 간접선거로 바꾼다. 되돌릴 수 없다", fx: {}, flag: "selfcoup", log: "국가비상사태를 선포하고 의회를 해산했다. 새 헌법은 간접선거와 6년 임기를 규정했다." },
+        { t: "출마하지 않는다", fx: { ap: 3, as: -2 }, log: "재선에 나서지 않겠다고 밝혔다." },
+      ] },
+    { id: "term_limit", fixed: "term", term: true, dept: "비서실장", title: "헌법상 마지막 임기입니다",
+      body: "{N} 헌법은 {T}의 연임을 막고 있습니다. 측근들은 개헌이나 비상조치로 권력을 이어가자고 건의합니다.",
+      choices: [
+        { t: "개헌으로 연임 제한을 없앤다", s: "의회 3분의 2와 국민투표가 필요하다", fx: {}, flag: "amend", log: "대통령 연임 제한을 없애는 개헌안을 발의했다." },
+        { t: "비상조치로 헌정을 중단한다", s: "의회를 해산하고 간접선거로 바꾼다. 되돌릴 수 없다", fx: {}, flag: "selfcoup", log: "국가비상사태를 선포하고 의회를 해산했다. 새 헌법은 간접선거와 6년 임기를 규정했다." },
+        { t: "헌법대로 물러난다", fx: { ap: 4, as: 2 }, log: "헌법에 따라 임기를 마치겠다고 밝혔다." },
       ] },
 
     // ── 전 세계 공통 ──
@@ -1480,7 +1501,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   // 지도 모드별 색표
   const relClass = (v) => v >= 40 ? "ally" : v >= 15 ? "friend" : v > -15 ? "neutral" : v > -40 ? "cool" : "hostile";
   function statOf(iso, k) {
-    if (G && iso === G.iso) return k === "fr" ? C[iso].fr : (G.s[k] ?? C[iso][k]);
+    if (G && iso === G.iso) return k === "fr" ? frOf(iso) : (G.s[k] ?? C[iso][k]);
     return C[iso][k];
   }
   function colorFor(iso, c) {
@@ -1765,7 +1786,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const p = AT.prov[selProv];
     el.hidden = false;
     el.innerHTML = `<h3><span>${flag(c.iso2)} ${esc(cname(selIso))}</span><button data-close aria-label="×">×</button></h3>
-      <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regime(c))} · ${t("bloc_" + c.bloc)}</div>
+      <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regOf(c))} · ${t("bloc_" + c.bloc)}</div>
       ${p && p.n ? `<div class="relbar"><span>${t("province")}: <b>${esc(p.n)}</b></span><span class="mono">${t("population")} ${fmtPop(p.pop)}</span></div>` : ""}
       <div class="insp-grid">${["ec", "we", "se", "fr", "env"].map((k) => `<div>${t(k)}<b>${statOf(selIso, k)}</b></div>`).join("")}<div>${t("debt")}<b>${c.debt}%</b></div></div>
       ${me ? `<div class="relbar"><b>${t("you")}</b></div>` : `<div class="relbar"><span>${t("relation")}</span><b class="mono">${r > 0 ? "+" : ""}${r} · ${t("lg_" + relClass(r))}</b></div>
@@ -2080,7 +2101,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   draft.name = randName(draft.iso);
 
   const isCamp = () => G && G.mode === "camp";
-  const autLadder = (c) => regime(c) === "aut";
+  const autLadder = (c) => regOf(c) === "aut";
   const campStage = (i) => {
     const c = C[G.iso];
     if (autLadder(c)) return t("st_a" + i);
@@ -2096,7 +2117,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (!name) { draft.err = t("nameEmpty"); render(); return; }
     if (isBlocked(name)) { draft.err = t("nameBlocked"); render(); return; }
     draft.err = "";
-    const reg = regime(c);
+    const reg = regOf(c);
     const mode = draft.mode === "camp" && c.gov !== "MON" ? "camp" : "gov";
     const startMode = mode;
     const origin = C[draft.origin] ? draft.origin : c.iso;
@@ -2104,7 +2125,9 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       s: { ap: 0, ec: c.ec, we: c.we, se: c.se, as: c.as, env: c.env, fis: Math.round(clamp(85 - c.debt * 0.25, 20, 90)), fat: 10 },
       c: null, x: { sus: 0, slush: 0, media: 0, exposed: 0, crimes: [], scandals: [] },
       q: 0, cq: 0, CQ: 6, phase: "event", cur: null, ctx: {}, result: null, pc: 2, used: {}, seen: {}, flags: {}, queue: [], log: [], hist: [], chist: [],
-      end: null, after: null, acted: [], rel: {}, lastEv: null, electionNote: null, feed: [], postedQ: -1, pendingScandal: null };
+      end: null, after: null, acted: [], rel: {}, lastEv: null, electionNote: null, feed: [], postedQ: -1, pendingScandal: null,
+      terms: 1, t0: 0, tQ: 0, wins: 0, reg: null, frD: 0, limitOff: false };
+    G.tQ = G.Q;
     if (draft.ideo === "l") { G.s.we += 3; G.s.ec -= 2; }
     if (draft.ideo === "r") { G.s.ec += 2; G.s.se += 2; G.s.we -= 2; }
     if (draft.ideo === "c") { G.s.as += 4; }
@@ -2201,7 +2224,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   }
   function pickEvent() {
     if (G.q === 0) return "cabinet";
-    if (G.q === G.Q - 1) return "farewell";
+    if (G.q === G.Q - 3 && termOffer()) return termOffer();
+    if (G.q === G.Q - 1 && !G.flags.run && !G.flags.emerg) return "farewell";
     if (G.pendingScandal) return "s_expose";
     const qi = G.queue.findIndex((x) => x.at <= G.q);
     if (qi >= 0) return G.queue.splice(qi, 1)[0].id;
@@ -2233,6 +2257,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       else if (c.risk.alt) { mergeD(d, applyFx(c.risk.alt.fx)); rels.push(...applyRel(c.risk.alt.r)); text += " " + fill(ct?.alog || c.risk.alt.log); }
     }
     if (c.flag) G.flags[c.flag] = true;
+    if (ev.term) { const m = termChoice(c.flag, d); if (m) text += " " + m; }
     if (c.chain) G.queue.push({ id: c.chain.id, at: G.q + c.chain.after });
     G.result = { pick: i, text, d, bad, rels };
     addLog(text, ev.scandal ? "big" : "");
@@ -2251,7 +2276,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   const DIRTY_CAMP = ["crony", "slush", "spy", "media", "rig", "cover"];
   function act(id) {
     if (G.phase !== "action" || G.pc <= 0) return;
-    const aut = regime(C[G.iso]) === "aut";
+    const aut = regOf(C[G.iso]) === "aut";
     let fx = {}, text = "", bad = false;
     const n = G.used[id] || 0;
     if (isCamp()) {
@@ -2281,7 +2306,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   }
   function dirty(id) {
     if (G.phase !== "action" || G.pc <= 0) return;
-    const reg = regime(C[G.iso]);
+    const reg = regOf(C[G.iso]);
     const lax = reg === "aut" ? 0.5 : reg === "hyb" ? 0.75 : 1;
     let fx = {}, crime = null, text = "";
     const camp = isCamp();
@@ -2337,7 +2362,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   function exposureCheck() {
     const hidden = G.x.crimes.filter((c) => !c.exposed);
     if (!hidden.length || G.pendingScandal || G.x.sus < 15) return;
-    const reg = regime(C[G.iso]);
+    const reg = regOf(C[G.iso]);
     const base = reg === "aut" ? 0.25 : reg === "hyb" ? 0.4 : 0.55;
     const p = Math.pow(G.x.sus / 100, 1.4) * base * (1 - 0.25 * G.x.media) + (isCamp() ? 0.04 : 0);
     if (Math.random() < p) {
@@ -2363,7 +2388,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     G.chist.push(cc.poll);
     const last = G.cq === G.CQ - 1;
     if (!aut && G.cq === 1) {
-      const score = cc.party * 0.6 + cc.rec * 0.3 + rand(-8, 8) + (regime(c) === "hyb" ? 5 : 0);
+      const score = cc.party * 0.6 + cc.rec * 0.3 + rand(-8, 8) + (regOf(c) === "hyb" ? 5 : 0);
       if (score < 36) { addLog(t("primaryLose"), "big"); return finish("primary"); }
       addLog(t("primaryWin"), "big"); cc.poll = clamp(cc.poll + 6);
     }
@@ -2377,7 +2402,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         if (me <= cc.opp) { addLog(t("succLose"), "big"); return finish("purged"); }
         addLog(t("succWin", { L: G.name }), "big");
       } else {
-        const tilt = regime(c) === "hyb" ? 6 : 0;
+        const tilt = regOf(c) === "hyb" ? 6 : 0;
         let a = cc.poll + rand(-5, 5), b = cc.opp + tilt + rand(-5, 5);
         const und = Math.max(0, 100 - a - b);
         a += und * (a / (a + b)); b = 100 - a;
@@ -2407,7 +2432,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     s.env = clamp(s.env + ri(-1, 1) - (s.ec > 65 ? 1 : 0));
     s.fat = clamp(s.fat - 18);
     for (const iso of Object.keys(G.rel)) { const b = rel0(G.iso, iso) + (iso === G.origin && G.origin !== G.iso ? 20 : 0); G.rel[iso] = Math.round(G.rel[iso] + (b - G.rel[iso]) * 0.06); }
-    const target = s.ec * 0.3 + s.we * 0.3 + s.se * 0.15 + s.as * 0.1 + s.env * 0.05 + 6 - G.x.exposed * 2;
+    const target = s.ec * 0.3 + s.we * 0.3 + s.se * 0.15 + s.as * 0.1 + s.env * 0.05 + 6 - G.x.exposed * 2 - (G.flags.emerg ? 6 : 0);
     s.ap = clamp(Math.round(s.ap + (target - s.ap) * 0.3 - 1 + (G.q < 2 ? 2 : 0) + rand(-2, 2)));
     G.hist.push(s.ap);
     const news = [];
@@ -2419,8 +2444,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     exposureCheck();
     G.q += 1;
     G.electionNote = null;
-    const reg = regime(c);
-    if ((c.gov === "P" || c.gov === "SP") && reg !== "aut" && G.q === Math.floor(G.Q / 2)) election(reg);
+    const reg = regOf(c);
+    if ((c.gov === "P" || c.gov === "SP") && reg !== "aut" && G.q - (G.t0 || 0) === Math.floor((G.tQ || G.Q) / 2)) election(reg);
     if (checkEnd()) return;
     startTurn();
   }
@@ -2433,20 +2458,61 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     addLog(t("election", { N: cname(G.iso), v: t(v), a: before, b: seats }), "big");
     G.electionNote = { v, before, seats };
   }
+  function termOffer() {
+    const c = C[G.iso];
+    if (!(c.gov === "P" || c.gov === "SP") || regOf(c) === "aut" || G.Q + c.term * 4 > MAXQ) return null;
+    const canRun = G.limitOff || TERM_FREE.includes(G.iso) || (!TERM_NONE.includes(G.iso) && (G.terms || 1) < 2);
+    return canRun ? "term_run" : "term_limit";
+  }
+  function termChoice(f, d) {
+    const s = G.s;
+    if (f === "amend") {
+      if (G.cur === "term_run") G.flags.run = true; // 개헌이 무산돼도 이번 재선은 가능
+      if (s.as < 60) { mergeD(d, applyFx({ ap: -4, as: -4 })); return t("tm_amendSeats"); }
+      if (Math.random() * 100 > clamp(s.ap + 15, 10, 85)) { mergeD(d, applyFx({ ap: -8, as: -6 })); return t("tm_amendFail"); }
+      G.limitOff = true; G.flags.run = true; G.frD -= 5; mergeD(d, applyFx({ ap: -3 }));
+      return t("tm_amendOk");
+    }
+    if (f === "selfcoup") {
+      G.reg = "aut"; G.flags.emerg = true; G.limitOff = true; G.frD -= 30;
+      mergeD(d, applyFx({ ap: -10, as: 40, ec: -3, se: 2 }));
+      for (const iso of ISOS) if (iso !== G.iso && C[iso].bloc === "W") G.rel[iso] = clamp((G.rel[iso] ?? 0) - 20, -100, 100);
+      return t("tm_coup");
+    }
+    return "";
+  }
+  function extendTerm(years, msg) {
+    G.terms++; G.t0 = G.Q; G.tQ = years * 4; G.Q += G.tQ;
+    delete G.flags.run;
+    addLog(msg, "big");
+    startTurn();
+  }
   function finishTerm() {
-    const c = C[G.iso], reg = regime(c);
+    const c = C[G.iso], reg = regOf(c);
+    if (G.flags.emerg) return G.Q + 24 <= MAXQ ? extendTerm(6, t("tm_indirect", { n: G.terms + 1 })) : finish("survive");
     if (reg === "aut") return finish("survive");
-    if (c.gov === "PM") return finish(G.s.ap + rand(-8, 8) >= 42 ? "reelect" : "lost");
+    if (c.gov === "PM") {
+      if (G.s.ap + rand(-8, 8) < 42) return finish("lost");
+      G.wins++;
+      return G.Q + c.term * 4 <= MAXQ ? extendTerm(c.term, t("tm_pmWin", { n: G.terms + 1 })) : finish("reelect");
+    }
+    if (G.flags.run) {
+      const a = clamp(Math.round(50 + (G.s.ap - 45) * 0.6 + (reg === "hyb" ? 8 : 0) - G.x.exposed * 3 + rand(-6, 6)), 5, 95);
+      if (a <= 50) { addLog(t("tm_runLose", { a, b: 100 - a }), "big"); return finish("runLost"); }
+      G.wins++;
+      return extendTerm(c.term, t("tm_runWin", { a, b: 100 - a, n: G.terms + 1 }));
+    }
     return finish("retire");
   }
   function checkEnd() {
     if (isCamp()) return false;
-    const s = G.s, c = C[G.iso], reg = regime(c);
+    const s = G.s, c = C[G.iso], reg = regOf(c);
     if (s.fis <= 0) { finish("default"); return true; }
     if (s.se <= 3) { finish("war"); return true; }
     if (reg === "aut") {
       if (s.as <= 12) { finish("coup"); return true; }
       if (s.ap <= 10 && s.we <= 25) { finish("rev"); return true; }
+      if (G.flags.emerg && s.ap < 25 && Math.random() < 0.06) { finish("rev"); return true; }
     } else {
       if (reg === "dem" && G.x.exposed >= 2 && G.x.sus >= 50 && s.as < 45 && s.ap < 35) { finish("corrupt"); return true; }
       if (s.ap <= 15 && s.as <= 30) { finish(c.gov === "PM" ? "noconf" : reg === "hyb" ? "rev" : "impeach"); return true; }
@@ -2454,7 +2520,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     return false;
   }
   function afterTerm(kind) {
-    const reg = regime(C[G.iso]);
+    const reg = regOf(C[G.iso]);
     const x = G.x;
     const m = "$" + x.slush + "M";
     G.afterKind = "none";
@@ -2491,12 +2557,12 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const avgAp = G.hist.reduce((a, b) => a + b, 0) / G.hist.length;
     const c = C[G.iso];
     const gain = ((s.ec - c.ec) + (s.we - c.we) + (s.se - c.se) + (s.env - c.env)) / 4;
-    let v = 50 + gain * 1.2 + (avgAp - 45) * 0.5 + (s.ap - 40) * 0.25 + (G.end === "reelect" ? 6 : 0) - x.slush / 5 - x.exposed * 4;
-    if (!["retire", "reelect", "survive", "lost"].includes(G.end)) v = Math.min(v, 28);
+    let v = 50 + gain * 1.2 + (avgAp - 45) * 0.5 + (s.ap - 40) * 0.25 + (G.wins ? 6 : 0) - (G.flags.emerg ? 15 : 0) - x.slush / 5 - x.exposed * 4;
+    if (!["retire", "reelect", "survive", "lost", "runLost"].includes(G.end)) v = Math.min(v, 28);
     v = clamp(Math.round(v));
     const grade = v >= 72 ? "S" : v >= 62 ? "A" : v >= 52 ? "B" : v >= 42 ? "C" : v >= 30 ? "D" : "F";
     const top = ["ec", "we", "se", "as", "env"].sort((a, b) => (s[b] - (c[b] ?? 50)) - (s[a] - (c[a] ?? 50)))[0];
-    const nick = x.slush >= 40 || x.exposed >= 3 ? t("n_corrupt") : ["retire", "reelect", "survive", "lost"].includes(G.end) ? t("n_" + top) : t("n_out");
+    const nick = x.slush >= 40 || x.exposed >= 3 ? t("n_corrupt") : ["retire", "reelect", "survive", "lost", "runLost"].includes(G.end) ? t("n_" + top) : t("n_out");
     return { v, grade, nick, avgAp: Math.round(avgAp) };
   }
 
@@ -2510,6 +2576,10 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     lb_empty: "아직 기록이 없습니다. 첫 기록의 주인공이 되어 보세요.", lb_loading: "리더보드를 불러오는 중…",
     lb_off: "공유 리더보드를 쓸 수 없어 이 브라우저에 저장된 내 기록만 보여줍니다.", lb_noWrite: "이 보기 권한으로는 공유 리더보드에 등록할 수 없어 이 브라우저에만 저장했어요.",
     lb_saved: "리더보드에 등록했어요.", lb_savedLocal: "이 브라우저에만 저장했어요.", lb_saving: "리더보드에 등록하는 중…", lb_failed: "등록하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    sc_emerg: "비상조치로 헌정 중단", sc_amend: "연임 개헌", e_runLost: "재선 실패", h_runLost: "재선에 실패했습니다",
+    tm_amendSeats: "의회 3분의 2를 얻지 못해 개헌안이 부결됐다.", tm_amendFail: "국민투표에서 개헌안이 부결됐다.", tm_amendOk: "국민투표에서 개헌안이 통과됐다. 연임 제한이 사라졌다.",
+    tm_coup: "서방 각국이 일제히 규탄 성명을 냈다.", tm_indirect: "간접선거에서 단독 후보로 선출됐다. {n}번째 임기가 시작된다.",
+    tm_pmWin: "총선에서 이겨 {n}번째 임기를 시작한다.", tm_runWin: "재선에 성공했다! 득표 {a}% 대 {b}%. {n}번째 임기가 시작된다.", tm_runLose: "재선에 실패했다. 득표 {a}% 대 {b}%.",
     lb_me: "나", lb_someone: "이름 없는 플레이어", lb_note: "사람마다 최고 기록 하나만 올라갑니다. 지도자 이름은 게임 속 가상 이름입니다.", lb_retry: "다시 등록",
   });
   Object.assign(STR.en, {
@@ -2521,6 +2591,10 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     lb_empty: "No records yet. Be the first on the board.", lb_loading: "Loading the leaderboard…",
     lb_off: "The shared leaderboard is unavailable, so only your records in this browser are shown.", lb_noWrite: "Your access level can't post to the shared leaderboard, so this run was saved in this browser only.",
     lb_saved: "Posted to the leaderboard.", lb_savedLocal: "Saved in this browser only.", lb_saving: "Posting to the leaderboard…", lb_failed: "Couldn't post. Try again in a moment.",
+    sc_emerg: "Suspended the constitution", sc_amend: "Term-limit amendment", e_runLost: "Lost re-election", h_runLost: "You lost your re-election bid",
+    tm_amendSeats: "The amendment failed to win two-thirds of the legislature.", tm_amendFail: "Voters rejected the amendment in a referendum.", tm_amendOk: "The referendum passed. Term limits are gone.",
+    tm_coup: "Western governments issued a joint condemnation.", tm_indirect: "Elected unopposed by an electoral college. Term {n} begins.",
+    tm_pmWin: "Won the general election. Term {n} begins.", tm_runWin: "Re-elected, {a}% to {b}%. Term {n} begins.", tm_runLose: "Lost the re-election bid, {a}% to {b}%.",
     lb_me: "You", lb_someone: "Unnamed player", lb_note: "Each person's best run is listed once. Leader names are fictional in-game names.", lb_retry: "Post again",
   });
 
@@ -2535,13 +2609,16 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       const avgAp = G.hist.reduce((a, b) => a + b, 0) / G.hist.length;
       const gain = ((s.ec - c.ec) + (s.we - c.we) + (s.se - c.se) + (s.env - c.env)) / 4;
       v = 50 + gain * 1.2 + (avgAp - 45) * 0.5 + (s.ap - 40) * 0.25;
-      if (!["retire", "reelect", "survive", "lost"].includes(G.end)) v = Math.min(v, 28);
+      if (!["retire", "reelect", "survive", "lost", "runLost"].includes(G.end)) v = Math.min(v, 28);
       v = clamp(Math.round(v));
     }
     let pts = v * 10;
     lines.push([t("sc_govBase", { v }), v * 10]);
-    if (G.end === "reelect") { pts += 150; lines.push([t("sc_reelect"), 150]); }
-    if (["retire", "reelect", "survive", "lost"].includes(G.end)) { pts += 100; lines.push([t("sc_full"), 100]); }
+    const w = G.wins || (G.end === "reelect" ? 1 : 0);
+    if (w) { pts += 150 * w; lines.push([t("sc_reelect") + (w > 1 ? " ×" + w : ""), 150 * w]); }
+    if (G.flags.emerg) { pts -= 300; lines.push([t("sc_emerg"), -300]); }
+    else if (G.limitOff) { pts -= 100; lines.push([t("sc_amend"), -100]); }
+    if (["retire", "reelect", "survive", "lost", "runLost"].includes(G.end)) { pts += 100; lines.push([t("sc_full"), 100]); }
     return { pts, lines };
   }
   // 사익 점수: 비자금과 비리, 그리고 끝까지 빠져나갔는지
@@ -2598,7 +2675,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const p = G.pts;
     const sc = score();
     const entry = { leader: String(G.name).slice(0, 24), iso: G.iso, origin: G.origin, mode: G.mode === "camp" ? "camp" : (G.startMode || "gov"), end: G.end, after: p.ak, grade: sc.grade,
-      gov: p.gov, greed: p.greed, total: p.total, slush: G.x.slush, crimes: G.x.crimes.length, exposed: G.x.exposed, date: new Date().toISOString().slice(0, 10) };
+      gov: p.gov, greed: p.greed, total: p.total, slush: G.x.slush, crimes: G.x.crimes.length, exposed: G.x.exposed, terms: G.terms || 1, date: new Date().toISOString().slice(0, 10) };
     const runs = [entry, ...localRuns()].sort((a, b) => b.total - a.total).slice(0, 20);
     store.set(LOCAL_KEY, runs);
     if (!LB.db || !LB.uid) { LB.status = LB.state === "off" ? "lb_savedLocal" : "lb_noWrite"; renderLB(); return; }
@@ -2711,7 +2788,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       ? `Stage: ${campStage(G.cq)}. ${G.name} is a candidate, not yet in power. Poll ${G.c.poll}% vs opponent ${G.c.opp}%.`
       : `Date: ${qLabel(G.q)}. ${G.name} is ${title(c)}. Approval ${G.s.ap}%. Economy ${G.s.ec}, welfare ${G.s.we}, security ${G.s.se}, legislature ${G.s.as}, environment ${G.s.env}, finances ${G.s.fis} (0-100).`;
     const sc = G.x.scandals.length ? `Exposed in-game scandals of this fictional leader: ${G.x.scandals.map(crimeLabel).join(", ")}.` : "No scandals exposed yet.";
-    return `Country: ${cname(G.iso)} (${t("sys_" + c.gov)}, ${t("reg_" + regime(c))}). The player's leader "${G.name}" is a fictional character${G.origin !== G.iso ? `, born in ${cname(G.origin)}` : ""}. Platform: ${t("ideo_" + G.ideo)}.
+    return `Country: ${cname(G.iso)} (${t("sys_" + c.gov)}, ${t("reg_" + regOf(c))}). The player's leader "${G.name}" is a fictional character${G.origin !== G.iso ? `, born in ${cname(G.origin)}` : ""}. Platform: ${t("ideo_" + G.ideo)}.
 ${status}
 ${sc}
 ${extra}
@@ -2812,7 +2889,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${t("poll")}">${grid}${area}<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>${axis}<circle cx="${x(vals.length - 1)}" cy="${y(vals[vals.length - 1])}" r="3.5" fill="var(--seal)"/></svg>`;
   }
   function statName(k) {
-    const aut = G && regime(C[G.iso]) === "aut";
+    const aut = G && regOf(C[G.iso]) === "aut";
     if (k === "ap" && aut) return t("ap_aut");
     if (k === "as" && aut) return t("as_aut");
     if (aut && ["party", "poll", "funds", "opp"].includes(k)) return t(k + "_aut");
@@ -2837,7 +2914,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
         <div class="top-right"><div class="term"><div class="term-head"><b>${G.phase === "over" ? t("ended") : campStage(G.cq)}</b><span class="mono">${G.phase === "over" ? "" : t("campLeft", { n: G.CQ - G.cq })}</span></div><div class="segs">${segs}</div></div>${langSel}</div>
       </header>`;
     }
-    const mid = (c.gov === "P" || c.gov === "SP") && regime(c) !== "aut" ? Math.floor(G.Q / 2) : -1;
+    const mid = (c.gov === "P" || c.gov === "SP") && regOf(c) !== "aut" ? (G.t0 || 0) + Math.floor((G.tQ || G.Q) / 2) : -1;
     const segs = Array.from({ length: G.Q }, (_, i) => `<i class="${i < G.q ? "done" : i === G.q && G.phase !== "over" ? "now" : ""} ${i === mid ? "elect" : ""}" title="${qLabel(i)}"></i>`).join("");
     return `<header class="top">
       <h1><span class="flag">${flag(c.iso2)}</span><span><small>${esc(cname(G.iso))} · ${title(c)} · ${t("sys_" + c.gov)} · ${t("ideo_" + G.ideo)}${born}</small>${esc(G.name)}</span></h1>
@@ -2854,7 +2931,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     return barRow(t("sus"), x.sus, susLvl) + `<div class="facts"><span>${t("slush")}: <b>$${x.slush}M</b></span>${x.scandals.length ? `<span>${t("crimes")}: <b>${x.scandals.map((k) => esc(crimeLabel(k))).join(", ")}</b></span>` : ""}</div>`;
   }
   function board() {
-    const c = C[G.iso], reg = regime(c);
+    const c = C[G.iso], reg = regOf(c);
     if (G.mode === "camp" && G.c) {
       const cc = G.c, aut = autLadder(c);
       const rows = ["rec", "party", "poll", "funds"].map((k) => barRow(statName(k), cc[k], cc[k] < 25 ? "low" : cc[k] < 40 ? "mid" : "")).join("") + barRow(statName("opp"), cc.opp, "fat") + barRow(t("fat"), G.s.fat, "fat");
@@ -2889,7 +2966,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
         <span class="src">${reg === "aut" ? t("pollAut") : t("pollSrc")}</span></div>
       ${["ec", "we", "se", "as", "env", "fis", "fat"].map(row).join("")}
       ${corruptRows()}
-      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span></div>
+      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${frOf(c.iso)}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span></div>
       ${w.length ? `<div class="warns">${w.map((x) => `<div class="warn">${x}</div>`).join("")}</div>` : ""}
     </aside>`;
   }
@@ -2915,7 +2992,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
   function agenda() {
     const on = G.phase === "action";
     const camp = isCamp();
-    const aut = regime(C[G.iso]) === "aut";
+    const aut = regOf(C[G.iso]) === "aut";
     const dots = [0, 1].map((i) => `<i class="${i < G.pc ? "on" : ""}"></i>`).join("");
     let list, label, desc;
     if (camp) {
@@ -2971,7 +3048,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     const c = C[draft.iso];
     const sorted = ISOS.slice().sort((a, b) => cname(a).localeCompare(cname(b), LANG));
     const opt = (k) => `<label class="opt"><input type="radio" name="ideo" id="ideo-${k}" value="${k}" ${draft.ideo === k ? "checked" : ""}><b>${t("ideo_" + k)}</b><span>${t("ideo_" + k + "_d")}</span></label>`;
-    const reg = regime(c);
+    const reg = regOf(c);
     const mon = c.gov === "MON";
     if (mon) draft.mode = "gov";
     const campLbl = autLadder(c) ? t("mode_camp_aut") : t("mode_camp");
@@ -3066,12 +3143,13 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     const mode = location.hash === "#democamp" ? "camp" : "gov";
     draft.iso = "KOR"; draft.origin = "KOR"; draft.name = "한가람"; draft.ideo = "c"; draft.mode = mode;
     newGame();
-    if (location.hash === "#demoend") {
+    if (location.hash === "#demoend" || location.hash === "#demoterm") {
+      const stop = () => G.phase === "over" || (location.hash === "#demoterm" && G.phase === "event" && EV[G.cur].term);
       let guard = 0;
-      while (G.phase !== "over" && guard++ < 60) {
-        if (G.phase === "event") choose(0);
+      while (!stop() && guard++ < 120) {
+        if (G.phase === "event") choose(EV[G.cur].term ? EV[G.cur].choices.length - 1 : 0);
         if (G.phase === "over") break;
-        dirty(guard % 3 ? "slush" : "cover"); if (G.phase === "over") break;
+        if (location.hash === "#demoend") { dirty(guard % 3 ? "slush" : "cover"); if (G.phase === "over") break; }
         act("speech"); if (G.phase === "over") break;
         nextTurn();
       }
