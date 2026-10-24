@@ -142,6 +142,10 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .ph b { font-weight: 700; }
 .ph .hd, .ph .tm { color: var(--muted); font-size: 12.5px; }
 .ph .vf { color: var(--accent); font-size: 12px; }
+.ph .fc { font-size: 11px; font-weight: 600; padding: 0 7px; border: 1px solid currentColor; border-radius: 99px; color: var(--muted); }
+.ph .fc-pro { color: var(--good); }
+.ph .fc-anti, .ph .fc-radical_left, .ph .fc-radical_right { color: var(--bad); }
+.ph .fc-pessimistic { color: var(--warn); }
 .pt { margin: 3px 0 6px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 .pa { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); font-family: var(--f-mono); align-items: center; }
 .feed-foot { padding: 10px 16px 14px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
@@ -1784,14 +1788,20 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const r = G.rel[selIso] ?? 0;
     const can = G.phase === "action" && G.pc > 0 && !me && G.mode !== "camp";
     const p = AT.prov[selProv];
+    const f = me ? null : flOf(selIso), blurb = f && flBlurb(selIso);
     el.hidden = false;
     el.innerHTML = `<h3><span>${flag(c.iso2)} ${esc(cname(selIso))}</span><button data-close aria-label="×">×</button></h3>
       <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regOf(c))} · ${t("bloc_" + c.bloc)}</div>
       ${p && p.n ? `<div class="relbar"><span>${t("province")}: <b>${esc(p.n)}</b></span><span class="mono">${t("population")} ${fmtPop(p.pop)}</span></div>` : ""}
       <div class="insp-grid">${["ec", "we", "se", "fr", "env"].map((k) => `<div>${t(k)}<b>${statOf(selIso, k)}</b></div>`).join("")}<div>${t("debt")}<b>${c.debt}%</b></div></div>
-      ${me ? `<div class="relbar"><b>${t("you")}</b></div>` : `<div class="relbar"><span>${t("relation")}</span><b class="mono">${r > 0 ? "+" : ""}${r} · ${t("lg_" + relClass(r))}</b></div>
+      ${me ? `<div class="relbar"><b>${t("you")}</b></div>` : `<div class="relbar"><span>${t("fl_leader")}: <b>${esc(flName(f))}</b></span><span class="mono">${t("ap")} ${f.ap}%</span></div>
+      ${f.real ? `<span class="hint" style="font-size:11px">${t("fl_real")}</span>` : ""}
+      <div class="relbar"><span>${t("fl_policy")}</span><b>${f.policy ? t("flp_" + f.policy) : "—"}</b></div>
+      ${blurb ? `<p class="hint" style="font-size:12px">${esc(blurb)}</p>` : ""}
+      <div class="relbar"><span>${t("relation")}</span><b class="mono">${r > 0 ? "+" : ""}${r} · ${t("lg_" + relClass(r))}</b></div>
       <div class="dip">${["summit", "trade", "aid", "sanction"].map((d) => `<button data-dip="${d}" ${can ? "" : "disabled"}>${t("d_" + d)}</button>`).join("")}</div>
-      ${G.phase !== "action" ? `<span class="hint" style="font-size:12px">${t("needAction")}</span>` : ""}`}`;
+      ${G.phase !== "action" ? `<span class="hint" style="font-size:12px">${t("needAction")}</span>` : ""}
+      <button class="ghost" data-flfeed ${feedBusy ? "disabled" : ""}>${t("fl_feed")}</button>`}`;
   }
 
   // ───────── 번역 (Claude) ─────────
@@ -2126,7 +2136,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       c: null, x: { sus: 0, slush: 0, media: 0, exposed: 0, crimes: [], scandals: [] },
       q: 0, cq: 0, CQ: 6, phase: "event", cur: null, ctx: {}, result: null, pc: 2, used: {}, seen: {}, flags: {}, queue: [], log: [], hist: [], chist: [],
       end: null, after: null, acted: [], rel: {}, lastEv: null, electionNote: null, feed: [], postedQ: -1, pendingScandal: null,
-      terms: 1, t0: 0, tQ: 0, wins: 0, reg: null, frD: 0, limitOff: false };
+      terms: 1, t0: 0, tQ: 0, wins: 0, reg: null, frD: 0, limitOff: false, fl: {}, dipped: {} };
     G.tQ = G.Q;
     if (draft.ideo === "l") { G.s.we += 3; G.s.ec -= 2; }
     if (draft.ideo === "r") { G.s.ec += 2; G.s.se += 2; G.s.we -= 2; }
@@ -2352,11 +2362,78 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (kind === "sanction") { const hostile = (G.rel[iso] ?? 0) < 0; fx = { ap: hostile ? 2 : -2, ec: -1 }; rv = -25; text = t("sancLog", { c }); }
     const d = applyFx(fx);
     G.rel[iso] = clamp((G.rel[iso] ?? 0) + rv, -100, 100);
+    (G.dipped ??= {})[iso] = G.q;
     G.pc -= 1;
     G.acted.push({ text, d, bad, rels: [[iso, rv]] });
     addLog(text);
     if (!checkEnd()) { render(); updateMap(); }
   }
+
+  // ── 타국 원수 ──
+  // 실존 원수(LEADERS)는 이름만 쓰고, 정책은 '그 나라 정부'의 공개 정책으로만 다룬다.
+  // ap=그 나라 지지율 변화, r=우리와의 관계 변화, fx=우리 지표 영향 (전쟁 단계에서 선전포고·휴전 정책을 여기에 더한다)
+  const FL_POLICY = {
+    stim: { ap: 3 }, austerity: { ap: -4 }, green: { ap: 1 }, arms: { ap: 1, r: -4, fx: { se: -1 } },
+    tradeYou: { ap: 1, r: 4, fx: { ec: 1 } }, aidYou: { r: 6, fx: { we: 1 } }, sanctionYou: { ap: 2, r: -8, fx: { ec: -2 } },
+  };
+  const flName = (f) => f.name[LANG === "ko" ? 0 : 1];
+  function flOf(iso) {
+    G.fl ??= {};
+    if (!G.fl[iso]) {
+      const c = C[iso], n = randName(iso);
+      G.fl[iso] = { name: LEADERS[iso] ? LEADERS[iso].slice() : [n, n], real: !!LEADERS[iso], ap: Math.round(clamp(30 + (c.ec + c.we) / 4 + rand(-8, 8), 15, 75)),
+        termQ: ri(1, (regime(c) === "aut" ? 5 : c.term) * 4), stance: relClass(G.rel[iso] ?? 0), policy: null, q: -1 };
+    }
+    return G.fl[iso];
+  }
+  // 이번 분기에 갱신할 나라: 이웃, 이번 사건의 상대, 최근 외교 상대, 지도에서 고른 나라 (최대 12곳)
+  function activeIsos() {
+    const recent = Object.keys(G.dipped || {}).filter((k) => G.q - G.dipped[k] <= 4);
+    return [...new Set([...(NEIGH[G.iso] || []), G.ctx.nb, G.ctx.rv, G.ctx.al, selIso, ...recent])].filter((x) => x && C[x] && x !== G.iso).slice(0, 12);
+  }
+  function flTick(iso) {
+    const f = flOf(iso), c = C[iso], r = G.rel[iso] ?? 0;
+    if (--f.termQ <= 0) {
+      if (regime(c) !== "aut" && f.ap + rand(-10, 10) < 45) {
+        const n = randName(iso);
+        Object.assign(f, { name: [n, n], real: false, ap: ri(45, 60) });
+        addLog(t("fl_new", { c: cname(iso) }), "news");
+      }
+      f.termQ = (regime(c) === "aut" ? 5 : c.term) * 4;
+    }
+    f.stance = relClass(r);
+    f.ap = Math.round(clamp(f.ap + rand(-3, 2), 5, 90));
+    if (Math.random() > 0.4) return;
+    const k = r <= -40 && c.bloc !== C[G.iso].bloc ? pick(["sanctionYou", "arms"]) : r <= -15 ? "arms"
+      : r >= 40 && Math.random() < 0.4 ? "aidYou" : r >= 15 ? "tradeYou" : f.ap < 30 || c.ec < 40 ? "stim" : c.debt > 100 ? "austerity" : "green";
+    const P = FL_POLICY[k];
+    f.policy = k; f.q = G.q;
+    f.ap = Math.round(clamp(f.ap + (P.ap || 0), 5, 90));
+    if (P.r) G.rel[iso] = clamp(r + P.r, -100, 100);
+    if (P.fx) { applyFx(P.fx); addLog(t("fl_l_" + k, { c: cname(iso) }), "news"); }
+  }
+  // 정책 설명 한 문장: 정보창을 열 때만 Claude에 묻고 결과는 하루 캐시
+  const FL_TXT = {};
+  function flBlurb(iso) {
+    const f = flOf(iso);
+    if (!f.policy) return null;
+    const key = `${iso}:${f.policy}:${LANG}`;
+    if (key in FL_TXT || sampleState !== "ready") return FL_TXT[key] || null;
+    FL_TXT[key] = "";
+    SAMPLE.json(`One neutral news-briefing sentence (max 25 words) in ${langName()} for a fictional strategy game: the government of ${cname(iso)} is pursuing this policy: "${STR.en["flp_" + f.policy]}" (your country = ${cname(G.iso)}). Describe only the public policy and refer to the government, not to any person. Reply with only a JSON object {"text": sentence}.`, { modelTier: "quick", cache: { gcTime: 86400000 } })
+      .then((o) => { FL_TXT[key] = String((o && o.text) || "").slice(0, 200); renderInspector(); }).catch(() => {});
+    return null;
+  }
+  Object.assign(STR.ko, {
+    fl_leader: "정상", fl_real: "실존 인물 · 공개 정책만 반영", fl_policy: "최근 정책", fl_feed: "이 나라 여론 보기", fl_new: "{c}에서 정권이 바뀌었다.",
+    flp_stim: "경기 부양", flp_austerity: "긴축 재정", flp_green: "녹색 전환", flp_arms: "군비 증강", flp_tradeYou: "우리나라와 교역 확대", flp_aidYou: "우리나라에 원조", flp_sanctionYou: "우리나라 제재",
+    fl_l_arms: "{c} 정부가 군비 증강에 나섰다.", fl_l_tradeYou: "{c} 정부가 우리와의 교역 확대를 발표했다.", fl_l_aidYou: "{c} 정부가 우리에게 원조를 보냈다.", fl_l_sanctionYou: "{c} 정부가 우리에게 경제 제재를 발표했다.",
+  });
+  Object.assign(STR.en, {
+    fl_leader: "Leader", fl_real: "Real person · public policy only", fl_policy: "Latest policy", fl_feed: "See this country's feed", fl_new: "{c} has a new government.",
+    flp_stim: "Economic stimulus", flp_austerity: "Austerity", flp_green: "Green transition", flp_arms: "Military build-up", flp_tradeYou: "More trade with your country", flp_aidYou: "Aid to your country", flp_sanctionYou: "Sanctions on your country",
+    fl_l_arms: "{c} announced a military build-up.", fl_l_tradeYou: "{c} announced more trade with us.", fl_l_aidYou: "{c} sent us aid.", fl_l_sanctionYou: "{c} announced economic sanctions on us.",
+  });
 
   // ── 폭로 ──
   function exposureCheck() {
@@ -2432,6 +2509,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     s.env = clamp(s.env + ri(-1, 1) - (s.ec > 65 ? 1 : 0));
     s.fat = clamp(s.fat - 18);
     for (const iso of Object.keys(G.rel)) { const b = rel0(G.iso, iso) + (iso === G.origin && G.origin !== G.iso ? 20 : 0); G.rel[iso] = Math.round(G.rel[iso] + (b - G.rel[iso]) * 0.06); }
+    activeIsos().forEach(flTick);
     const target = s.ec * 0.3 + s.we * 0.3 + s.se * 0.15 + s.as * 0.1 + s.env * 0.05 + 6 - G.x.exposed * 2 - (G.flags.emerg ? 6 : 0);
     s.ap = clamp(Math.round(s.ap + (target - s.ap) * 0.3 - 1 + (G.q < 2 ? 2 : 0) + rand(-2, 2)));
     G.hist.push(s.ap);
@@ -2749,37 +2827,72 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       pro: ["이번 건은 {L} 잘했다 인정", "'{E}' 이 정도면 선방한 듯", "{L} 욕하던 사람들 이번엔 조용하네 ㅋㅋ"],
       neu: ["'{E}' 뉴스 보고 왔는데 다들 어떻게 생각함?", "솔직히 누가 해도 어려운 문제였음", "{NB} 반응은 어떤지 궁금하네"],
       scandal: ["{X}? {L} 이 ㅅㄲ 이럴 줄 알았다", "{L} 사퇴해라. {X}가 말이 되냐", "내 세금으로 {X}… 진짜 화나서 잠이 안 온다", "{L} 찍은 내 손가락 자르고 싶다", "#{L}_구속 #{X}", "{X} 터진 거 보고도 쉴드 치는 사람들 대단하다"],
+      pessimistic: ["어차피 내년엔 더 나빠질 듯… 적금이나 깨야지", "'{E}' 봐도 달라질 건 없어 보임", "{N} 경제 이제 회복 못 하는 거 아님?"],
+      cynical: ["{L}이 뭘 하든 결국 자기 사람 챙기기겠지", "'{E}'? 보여주기 또 시작이네", "누가 해도 똑같다. 기대 안 함 #{N}"],
+      radical_left: ["감세 말고 노동자 임금부터 올려라", "'{E}' 대응은 서민 외면이다. 주말 집회에서 목소리 내자", "{L} 정부는 부자 편이다. 정책 전면 재검토하라"],
+      radical_right: ["안보가 먼저다. {L} 정부 너무 물러터졌다", "'{E}'? 국익은 어디 갔냐", "세금 퍼주기 그만하고 국방부터 챙겨라"],
+      f_pro: ["{L} 정부의 {P}, 이번엔 방향 맞다", "{P} 덕에 숨통 좀 트이겠네", "{ME} 눈치 안 보고 밀어붙이는 거 좋다"],
+      f_anti: ["{L} 정부 {P}? 서민은 또 뒷전", "{P} 한다더니 물가는 누가 잡냐 #{N}", "{ME}랑 이렇게 엮이는 게 국익이냐"],
+      f_neu: ["{P} 뉴스 봤는데 효과는 지켜봐야 할 듯", "{ME} 쪽 반응이 어떨지 궁금함", "정책은 좋은데 재원은 어디서 나옴?"],
     },
     en: {
       anti: ["What is {L} even doing? This is policy now? lol", "{L} messed up again. What a waste of tax money", "After the '{E}' response, the approval numbers make sense", "{L} crossed a line with this one. See you at the ballot box", "Embarrassing in front of {RV}, {L}", "Zero idea what's happening on the ground #{N}"],
       pro: ["Credit where due, {L} got this one right", "Honestly a decent call on '{E}'", "All the {L} haters are quiet today lol"],
       neu: ["Just saw the '{E}' news, what does everyone think?", "Tough problem no matter who's in charge", "Wonder how {NB} is taking this"],
       scandal: ["{X}?? Knew it. {L} is a crook", "{L} resign. {X}, seriously?", "My taxes paid for {X}. Furious", "Regret ever voting for {L}", "#Lock{L}Up #{X}", "Still defending {L} after {X}? Wow"],
+      pessimistic: ["Next year will be worse anyway. Time to raid the savings", "Nothing changes after '{E}', honestly", "Is the {N} economy ever coming back?"],
+      cynical: ["Whatever {L} does, it ends up helping their own people", "'{E}'? Another photo op", "Same story no matter who's in charge #{N}"],
+      radical_left: ["Raise workers' wages before any more tax cuts", "The '{E}' response ignores ordinary people. See you at the weekend rally", "{L}'s government works for the rich. Rethink the whole agenda"],
+      radical_right: ["Security first. {L}'s government is far too soft", "'{E}'? Where's the national interest?", "Stop the handouts and fund defense"],
+      f_pro: ["{L}'s government got {P} right this time", "{P} should give us some breathing room", "Good to see us push ahead without waiting on {ME}"],
+      f_anti: ["{P} from {L}'s government? Ordinary people come last again", "{P}, but who's fixing prices? #{N}", "How is getting tangled up with {ME} in our interest?"],
+      f_neu: ["Saw the {P} news, let's see if it works", "Wonder how {ME} will react", "Nice policy, but who pays for it?"],
     },
   };
   const NICKS = {
     ko: [["세금내는직장인", "taxpayer_kim"], ["동네치킨집사장", "chicken_boss"], ["취준생3년차", "jobseeker_03"], ["경제오타쿠", "econ_nerd"], ["은퇴한교사", "retired_teacher"], ["새벽배송기사", "dawn_driver"], ["대학원생A", "grad_student_a"], ["농부의아들", "farmers_son"]],
     en: [["Tired Taxpayer", "tired_taxpayer"], ["Corner Diner", "corner_diner"], ["Job Hunt Day 900", "jobhunt900"], ["Econ Nerd", "econ_nerd"], ["Retired Teacher", "retired_teach"], ["Night Shift Nurse", "nightshift_rn"], ["Grad Student", "grad_student"], ["Farm Kid", "farm_kid"]],
   };
-  const curAp = () => isCamp() ? G.c.poll * 1.6 : G.s.ap;
+  const STANCES = ["pro", "anti", "neutral", "pessimistic", "cynical", "radical_left", "radical_right"];
+  const NEG = ["anti", "pessimistic", "cynical", "radical_left", "radical_right"];
+  // 입장 비율: 지지율로 찬반을 나누고, 경제가 나쁘면 비관, 의혹이 쌓이면 냉소, 민생·안보가 무너지면 양극단이 는다 (전쟁 피로도 여기에 더한다)
+  function moodMix(ctx = {}) {
+    if (ctx.scandal) return { pro: 3, anti: 45, neutral: 5, pessimistic: 6, cynical: 25, radical_left: 8, radical_right: 8 };
+    const f = ctx.iso ? flOf(ctx.iso) : null, st = f ? C[ctx.iso] : G.s;
+    const ap = f ? f.ap : isCamp() ? G.c.poll * 1.6 : G.s.ap, bad = ctx.bad ? 10 : 0;
+    return { pro: clamp(ap - bad, 5, 80), anti: clamp(70 - ap + bad, 5, 70), neutral: 15, pessimistic: clamp(45 - st.ec, 0, 30) + 3,
+      cynical: (f ? 4 : clamp(G.x.exposed * 8 + G.x.sus / 5, 0, 30)) + 4, radical_left: clamp(40 - st.we, 0, 20) + 2, radical_right: clamp(40 - st.se, 0, 20) + 2 };
+  }
+  const mixText = (m) => { const s = STANCES.reduce((a, k) => a + m[k], 0); return STANCES.map((k) => `${k} ${Math.round(m[k] / s * 100)}%`).join(", "); };
+  function pickStance(m) {
+    let r = Math.random() * STANCES.reduce((a, k) => a + m[k], 0);
+    for (const k of STANCES) { r -= m[k]; if (r <= 0) return k; }
+    return "neutral";
+  }
   function offlinePosts(ctx, n, scandal) {
     const L = LANG === "ko" ? "ko" : "en";
-    const pool = OFF[L], nicks = NICKS[L];
-    const antiShare = scandal ? 0.85 : clamp(1 - curAp() / 100 + (ctx.bad ? 0.15 : 0), 0.2, 0.9);
+    const pool = OFF[L], nicks = NICKS[L], mix = moodMix({ ...ctx, scandal });
+    const f = ctx.iso ? flOf(ctx.iso) : null;
     const out = [];
     for (let i = 0; i < n; i++) {
-      const r = Math.random();
-      const stance = r < antiShare ? "anti" : r < antiShare + 0.2 ? "pro" : "neutral";
-      const bucket = stance === "anti" ? (scandal ? pool.scandal : pool.anti) : stance === "pro" ? pool.pro : pool.neu;
+      const stance = pickStance(mix);
+      const bucket = f ? pool[stance === "pro" ? "f_pro" : ["anti", "radical_left", "radical_right"].includes(stance) ? "f_anti" : "f_neu"]
+        : scandal && stance === "anti" ? pool.scandal : pool[stance === "neutral" ? "neu" : stance];
       let tpl = pick(bucket);
       for (let k = 0; k < 6 && out.some((o) => o.tpl === tpl); k++) tpl = pick(bucket);
       if (!ctx.event && tpl.includes("{E}")) tpl = pick(pool.anti.filter((x) => !x.includes("{E}")));
       const [name, handle] = pick(nicks);
-      const text = tpl.replace(/\{(L|E|N|NB|RV|X)\}/g, (_, k) => ({ L: G.name.replace(/\s/g, ""), E: ctx.event || "", N: cname(G.iso).replace(/\s/g, ""), NB: cname(G.ctx.nb), RV: G.ctx.rv ? cname(G.ctx.rv) : "", X: G.ctx.X ? crimeLabel(G.ctx.X) : "" }[k]));
-      out.push({ tpl, name, handle, text, stance, likes: ri(3, 4000), reposts: ri(0, 600), replies: ri(0, 200) });
+      const text = tpl.replace(/\{(L|E|N|NB|RV|X|P|ME)\}/g, (_, k) => ({ L: (f ? flName(f) : G.name).replace(/\s/g, ""), E: ctx.event || "", N: cname(ctx.iso || G.iso).replace(/\s/g, ""), NB: cname(G.ctx.nb), RV: G.ctx.rv ? cname(G.ctx.rv) : "", X: G.ctx.X ? crimeLabel(G.ctx.X) : "", P: f && f.policy ? t("flp_" + f.policy) : t("fl_policy"), ME: cname(G.iso) }[k]));
+      out.push({ tpl, name, handle, text, stance, faction: t("fc_" + stance), iso: ctx.iso, likes: ri(3, 4000), reposts: ri(0, 600), replies: ri(0, 200) });
     }
     return out;
   }
+  Object.assign(STR.ko, {
+    fc_pro: "지지층", fc_anti: "비판층", fc_neutral: "중도층", fc_pessimistic: "비관론자", fc_cynical: "냉소층", fc_radical_left: "진보 강경파", fc_radical_right: "보수 강경파",
+  });
+  Object.assign(STR.en, {
+    fc_pro: "Supporter", fc_anti: "Critic", fc_neutral: "Undecided", fc_pessimistic: "Pessimist", fc_cynical: "Cynic", fc_radical_left: "Hard left", fc_radical_right: "Hard right",
+  });
   function feedContext(extra) {
     const c = C[G.iso];
     const others = [G.ctx.nb, G.ctx.rv, G.ctx.al].filter((x, i, a) => x && a.indexOf(x) === i)
@@ -2794,14 +2907,16 @@ ${sc}
 ${extra}
 Other countries in the news: ${others || "none"}.`;
   }
-  const FEED_RULES = "Rules: this is a clearly fictional game feed. Posts may attack the fictional leader by name for the in-game decisions and the exposed in-game scandals listed above, with harsh criticism, sarcasm, mockery and masked profanity the way people write online. Real people (such as other countries' real leaders) may only be criticized for their public policies; never attribute crimes, scandals, health, family or private-life claims to any real person. No slurs or attacks on any ethnic, religious, gender or other group. No threats, no calls for violence, no sexual content.";
+  const FEED_RULES = "Rules: this is a clearly fictional game feed. Posts may attack the fictional leader by name for the in-game decisions and the exposed in-game scandals listed above, with harsh criticism, sarcasm, mockery and masked profanity the way people write online. Real people (such as other countries' real leaders) may only be criticized for their public policies; never attribute crimes, scandals, health, family or private-life claims to any real person. No slurs or attacks on any ethnic, religious, gender or other group. No threats, no calls for violence, no sexual content. Radical left or right voices only state grievances and political demands.";
+  const POST_JSON = `{"name": display name, "handle": latin handle without @, "text": post, "stance": ${STANCES.map((s) => `"${s}"`).join("|")}, "faction": short label for the speaker's group (e.g. union member, small-business owner), "likes": number, "reposts": number, "replies": number}`;
   const langName = () => LANGS.find((l) => l[0] === LANG)?.[1] || LANG;
   function cleanPosts(out) {
     return (Array.isArray(out) ? out : []).filter((x) => x && typeof x.text === "string" && x.text.trim()).slice(0, 8).map((x) => ({
       name: String(x.name || "citizen").slice(0, 30),
       handle: String(x.handle || "user").replace(/[^\w.]/g, "").slice(0, 20) || "user",
       text: String(x.text).slice(0, 400),
-      stance: ["pro", "anti", "neutral"].includes(x.stance) ? x.stance : "neutral",
+      stance: STANCES.includes(x.stance) ? x.stance : "neutral",
+      faction: String(x.faction || "").slice(0, 24),
       likes: Math.max(0, Math.round(+x.likes || 0)), reposts: Math.max(0, Math.round(+x.reposts || 0)), replies: Math.max(0, Math.round(+x.replies || 0)) }));
   }
   async function genFeed(kind, payload) {
@@ -2814,26 +2929,33 @@ Other countries in the news: ${others || "none"}.`;
       render(); return;
     }
     feedBusy = true; render();
-    const anti = scandal ? 85 : Math.round(clamp(100 - curAp() + (payload.bad ? 10 : 0), 20, 90));
+    const mix = mixText(moodMix({ scandal, bad: payload.bad, iso: payload.iso }));
     let prompt;
     if (kind === "leader") {
       prompt = `You write replies on a simulated social network inside a political strategy game.
 ${feedContext(`The leader just posted from the official account: "${payload.text}"`)}
-Write 4 replies in ${langName()} from ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there reply to a politician: short, colloquial, slang, sarcasm, memes. About ${anti}% critical, the rest supportive or neutral, reacting to what the leader actually wrote and to any exposed scandals.
+Write 4 replies in ${langName()} from ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there reply to a politician: short, colloquial, slang, sarcasm, memes. Stance mix: ${mix}. React to what the leader actually wrote and to any exposed scandals.
 ${FEED_RULES}
-Reply with only a JSON array of objects {"name": display name, "handle": latin handle without @, "text": reply, "stance": "pro"|"anti"|"neutral", "likes": number}.`;
+Reply with only a JSON array of objects ${POST_JSON}.`;
+    } else if (kind === "foreign") {
+      const f = flOf(payload.iso), c = C[payload.iso];
+      prompt = `You write a simulated social-media timeline inside a political strategy game.
+Country: ${cname(payload.iso)} (${t("sys_" + c.gov)}, ${t("reg_" + regime(c))}). Its leader is ${payload.leader}${f.real ? ", a real person: judge only their government's public policies" : ", a fictional character"}. Government approval about ${f.ap}%. Current policy: ${payload.policy ? STR.en["flp_" + payload.policy] : "no major new policy"}. Relations with ${cname(G.iso)} (the player's country, led by the fictional ${G.name}): ${relClass(G.rel[payload.iso] ?? 0)}.
+Write 4 posts in ${langName()} by ordinary fictional citizens of ${cname(payload.iso)} judging their own leader's policy, the way netizens there post. Stance mix: ${mix}.
+${FEED_RULES}
+Reply with only a JSON array of objects ${POST_JSON}.`;
     } else {
       const situation = payload.event
         ? `${scandal ? "BREAKING: a scandal was just exposed. " : ""}This turn's issue: ${payload.event}. The leader decided: ${payload.choice}. Outcome: ${payload.result}. Stat changes: ${payload.deltas || "none"}.`
         : `Recent log: ${G.log.slice(0, 4).map((l) => l.text).join(" / ")}`;
       prompt = `You write a simulated social-media timeline inside a political strategy game.
 ${feedContext(situation)}
-Write ${kind === "more" ? 4 : 6} posts in ${langName()} by ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there post: short, colloquial, slang, sarcasm, memes, hashtags, a few longer rants. Mention the leader by name in several posts${scandal ? " and pile on about the scandal: anger, resignation demands, jokes, a few die-hard defenders" : ""}. About ${anti}% critical, the rest supportive or neutral. Vary the voices (workers, students, retirees, business owners, partisans of both sides).
+Write ${kind === "more" ? 4 : 6} posts in ${langName()} by ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there post: short, colloquial, slang, sarcasm, memes, hashtags, a few longer rants. Mention the leader by name in several posts${scandal ? " and pile on about the scandal: anger, resignation demands, jokes, a few die-hard defenders" : ""}. Stance mix: ${mix}. Vary the voices (workers, students, retirees, business owners, partisans of both sides).
 ${FEED_RULES}
-Reply with only a JSON array of objects {"name": display name, "handle": latin handle without @, "text": post, "stance": "pro"|"anti"|"neutral", "likes": number, "reposts": number, "replies": number}.`;
+Reply with only a JSON array of objects ${POST_JSON}.`;
     }
     try {
-      const list = cleanPosts(await SAMPLE.json(prompt, { modelTier: "quick", cache: false }));
+      const list = cleanPosts(await SAMPLE.json(prompt, { modelTier: "quick", cache: false })).map((p) => ({ ...p, iso: payload.iso }));
       if (kind === "leader") addLeaderPost(payload.text, list); else addPosts(list);
     } catch (e) {
       if (e && ["not_granted", "sampling_disabled", "not_declared"].includes(e.code)) { sampleState = "off"; feedBusy = false; return genFeed(kind, payload); }
@@ -2847,7 +2969,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     G.feed = G.feed.slice(0, 80);
   }
   function addLeaderPost(text, replies) {
-    const pro = replies.filter((r) => r.stance === "pro").length, anti = replies.filter((r) => r.stance === "anti").length;
+    const pro = replies.filter((r) => r.stance === "pro").length, anti = replies.filter((r) => NEG.includes(r.stance)).length;
     const d = applyFx({ ap: clamp(Math.round((pro - anti) / 2), -2, 2) });
     G.feed.unshift({ leader: true, name: G.name, handle: "official_" + G.iso.toLowerCase(), text, when: turnLabel(), likes: ri(2000, 90000), reposts: ri(300, 20000), replies: replies.length, d,
       thread: replies.map((r) => ({ ...r, when: turnLabel() })) });
@@ -2858,7 +2980,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     const init = [...(p.name || "?")][0];
     const dk = p.d ? Object.keys(p.d)[0] : null;
     return `<li class="post${reply ? " reply" : ""}"><span class="av" style="background:${p.leader ? "var(--me)" : avColor(p.handle)}" aria-hidden="true">${esc(init)}</span>
-      <div style="min-width:0"><div class="ph"><b>${esc(p.name)}</b>${p.leader ? `<span class="vf">✔ ${t("verified")}</span>` : ""}<span class="hd">@${esc(p.handle)}</span><span class="tm">· ${esc(p.when || t("now"))}</span></div>
+      <div style="min-width:0"><div class="ph">${p.iso && C[p.iso] ? flag(C[p.iso].iso2) : ""}<b>${esc(p.name)}</b>${p.leader ? `<span class="vf">✔ ${t("verified")}</span>` : ""}<span class="hd">@${esc(p.handle)}</span><span class="tm">· ${esc(p.when || t("now"))}</span>${p.stance && !p.leader ? `<span class="fc fc-${p.stance}">${esc(p.faction || t("fc_" + p.stance))}</span>` : ""}</div>
       <p class="pt">${esc(p.text)}</p>
       <div class="pa"><span>↩ ${p.replies ?? 0}</span><span>⟲ ${p.reposts ?? 0}</span><span>♥ ${p.likes ?? 0}</span>${dk && p.d[dk] ? `<span class="chip ${p.d[dk] > 0 ? "up" : "down"}">${statName(dk)} ${p.d[dk] > 0 ? "+" : "−"}${Math.abs(p.d[dk])}</span>` : ""}</div></div></li>`
       + (p.thread || []).map((r) => postHtml(r, true)).join("");
@@ -3107,6 +3229,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     else if (b.hasAttribute("data-random")) { draft.iso = pick(ISOS); draft.origin = draft.iso; draft.name = randName(draft.iso); draft.err = ""; renderAll(); focusIso(draft.iso); }
     else if (b.hasAttribute("data-reroll")) { draft.name = randName(draft.iso); draft.err = ""; render(); }
     else if (b.hasAttribute("data-feedmore")) genFeed("more", {});
+    else if (b.hasAttribute("data-flfeed") && G && selIso) { const f = flOf(selIso); genFeed("foreign", { iso: selIso, leader: flName(f), policy: f.policy }); }
     else if (b.hasAttribute("data-post")) {
       const el = $("#cmp"); const txt = el ? el.value.trim() : "";
       const curTurn = isCamp() ? "c" + G.cq : G.q;
