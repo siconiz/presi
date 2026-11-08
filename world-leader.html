@@ -27,6 +27,7 @@
   --r-neutral: #e3dfcf;
   --r-cool: #e7a98f;
   --r-hostile: #c4483a;
+  --w-ally: #e08a2e; --w-aid: #e6c84a; --w-front: #e0261b;
   --q1: #f1e9d2; --q2: #d8d29c; --q3: #a9bf78; --q4: #6e9e5a; --q5: #3d7449;
   --f-display: "Gowun Batang", "Nanum Myeongjo", "Noto Serif CJK KR", "Noto Serif JP", "Songti SC", Georgia, serif;
   --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Microsoft YaHei", system-ui, sans-serif;
@@ -39,6 +40,7 @@
     --accent: #63b9a5; --accent-soft: #1c3430; --seal: #e3685e; --good: #5cc28a; --bad: #ec7a70; --warn: #e0a84a;
     --track: #232f38; --sea: #13242d; --land: #2a3238; --border: #0e1418; --me: #f0b83a;
     --r-ally: #3d8a5f; --r-friend: #4f6f57; --r-neutral: #4a4a40; --r-cool: #7a4c3f; --r-hostile: #a8392d;
+    --w-ally: #b36a1f; --w-aid: #8f7a2a; --w-front: #ff5a4a;
     --q1: #3a3a2e; --q2: #4f5a35; --q3: #557a3e; --q4: #4f9157; --q5: #6cc07a;
     color-scheme: dark;
   }
@@ -48,6 +50,7 @@
   --accent: #63b9a5; --accent-soft: #1c3430; --seal: #e3685e; --good: #5cc28a; --bad: #ec7a70; --warn: #e0a84a;
   --track: #232f38; --sea: #13242d; --land: #2a3238; --border: #0e1418; --me: #f0b83a;
   --r-ally: #3d8a5f; --r-friend: #4f6f57; --r-neutral: #4a4a40; --r-cool: #7a4c3f; --r-hostile: #a8392d;
+    --w-ally: #b36a1f; --w-aid: #8f7a2a; --w-front: #ff5a4a;
   --q1: #3a3a2e; --q2: #4f5a35; --q3: #557a3e; --q4: #4f9157; --q5: #6cc07a;
   color-scheme: dark;
 }
@@ -115,7 +118,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .dip button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .dip button:disabled { opacity: .4; cursor: not-allowed; }
 .mapfail { padding: 40px 20px; text-align: center; color: var(--muted); }
-@media (max-width: 640px) { .inspector { position: static; width: auto; margin: 8px; box-shadow: none; } .legend { position: static; margin: 0 8px 8px; } }
+@media (max-width: 640px) { .inspector { position: static; width: auto; margin: 8px; box-shadow: none; } .legend { position: static; margin: 0 8px 8px; } .attrib { position: static; display: block; margin: 0 8px 8px; max-width: none; } }
 
 /* 본문 그리드 */
 .grid { display: grid; grid-template-columns: 270px minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
@@ -208,6 +211,13 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .facts { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--muted); }
 .facts b { color: var(--ink); font-weight: 600; }
 .warns { display: flex; flex-direction: column; gap: 6px; }
+.warcard { border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--line)); border-radius: var(--r); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.wc-head { display: flex; justify-content: space-between; gap: 8px; }
+.wc-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; color: var(--muted); }
+.wc-row b { color: var(--ink); }
+.front { position: relative; height: 8px; background: var(--track); border-radius: 4px; }
+.front::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.front span { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
 .warn { font-size: 12.5px; padding: 6px 10px; border-radius: 4px; background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); font-weight: 600; }
 
 .desk { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
@@ -1487,6 +1497,15 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const me = G ? G.iso : draft.iso;
     if (mapMode === "pol") return [...hex3(c.col), C[iso] ? 150 : 95];
     if (!C[iso]) return [...tok("--land"), 110];
+    if (mapMode === "war") {
+      if (iso === me) return [...tok("--me"), 200];
+      const ws = G ? G.war : [];
+      if (ws.some((w) => w.foe === iso)) return [...tok("--r-hostile"), 210];
+      if (ws.some((w) => w.foeAllies.includes(iso))) return [...tok("--r-cool"), 190];
+      if (ws.some((w) => w.allies.includes(iso))) return [...tok("--w-ally"), 190];
+      if (ws.some((w) => w.aid.includes(iso))) return [...tok("--w-aid"), 180];
+      return [...tok("--r-neutral"), 110];
+    }
     if (mapMode === "rel") {
       if (iso === me) return [...tok("--me"), 200];
       const v = G ? (G.rel[iso] ?? 0) : rel0(me, iso);
@@ -1506,17 +1525,20 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       lut.set(col, id * 4);
     }
     const meId = AT.isoToC[me]?.id ?? -1, selId = AT.isoToC[selIso]?.id ?? -1;
-    const sig = mapMode + "|" + meId + "|" + selId + "|" + Array.from(lut).join(",") + isDark();
+    const fids = new Set((G && G.war ? G.war : []).map((w) => AT.isoToC[w.foe]?.id).filter((x) => x !== undefined));
+    const sig = mapMode + "|" + meId + "|" + selId + "|" + [...fids].join(".") + "|" + Array.from(lut).join(",") + isDark();
     if (sig === AT.sig) return;
     AT.sig = sig;
     const ink = isDark() ? [12, 16, 20] : [58, 46, 34];
-    const gold = tok("--me"), red = tok("--seal");
-    const out = AT.polImg.data, cty = AT.cty, edge = AT.edge, n = AT.pw * AT.ph;
+    const gold = tok("--me"), red = tok("--seal"), front = tok("--w-front");
+    const out = AT.polImg.data, cty = AT.cty, edge = AT.edge, n = AT.pw * AT.ph, pw = AT.pw;
+    const isFront = (i, c) => [cty[i + 1], cty[i - 1], cty[i + pw], cty[i - pw]].some((o) => c === meId ? fids.has(o) : o === meId);
     for (let i = 0, j = 0; i < n; i++, j += 4) {
       const c = cty[i];
       if (!c) { out[j + 3] = 0; continue; }
       const k = c * 4, e = edge[i];
-      if (e >= 2) {
+      if (e === 2 && fids.size && (c === meId || fids.has(c)) && isFront(i, c)) { out[j] = front[0]; out[j + 1] = front[1]; out[j + 2] = front[2]; out[j + 3] = 255; }
+      else if (e >= 2) {
         if (c === meId) { out[j] = gold[0]; out[j + 1] = gold[1]; out[j + 2] = gold[2]; out[j + 3] = 255; }
         else if (c === selId) { out[j] = red[0]; out[j + 1] = red[1]; out[j + 2] = red[2]; out[j + 3] = 255; }
         else { out[j] = ink[0]; out[j + 1] = ink[1]; out[j + 2] = ink[2]; out[j + 3] = e === 2 ? 190 : 120; }
@@ -1725,11 +1747,12 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
 
   function updateMap() {
     if (!mapReady) return;
-    const modes = ["pol", "rel", "ec", "we", "se", "fr", "env"];
+    const modes = ["pol", "rel", "war", "ec", "we", "se", "fr", "env"];
     $("#modes").innerHTML = modes.map((m) => `<button data-mode="${m}" aria-pressed="${m === mapMode}">${t("m_" + m)}</button>`).join("");
     const lg = $("#legend");
     if (mapMode === "pol") lg.innerHTML = `<span>${t("lg_pol")}</span>`;
     else if (mapMode === "rel") lg.innerHTML = ["me", "ally", "friend", "neutral", "cool", "hostile"].map((k) => `<span><i style="background:var(${k === "me" ? "--me" : "--r-" + k})"></i>${t("lg_" + k)}</span>`).join("") + `<span><i style="background:var(--land)"></i>${t("lg_nodata")}</span>`;
+    else if (mapMode === "war") lg.innerHTML = [["--me", "lg_me"], ["--r-hostile", "lg_foe"], ["--r-cool", "lg_foeAlly"], ["--w-ally", "lg_wally"], ["--w-aid", "lg_aid"], ["--w-front", "w_front"]].map(([v, k]) => `<span><i style="background:var(${v})"></i>${t(k)}</span>`).join("");
     else lg.innerHTML = `<span>${t("m_" + mapMode)}: ${t("lg_low")}</span>` + [1, 2, 3, 4, 5].map((q) => `<i style="background:var(--q${q})"></i>`).join("") + `<span>${t("lg_high")}</span>`;
     renderInspector();
     requestDraw();
@@ -1742,6 +1765,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     let txt = cname(h.iso) + (p && p.n ? " · " + p.n : "");
     if (C[h.iso]) {
       if (mapMode === "rel") { const me = G ? G.iso : draft.iso; if (h.iso !== me) txt += " · " + t("lg_rel", { v: G ? (G.rel[h.iso] ?? 0) : rel0(me, h.iso) }); }
+      else if (mapMode === "war") txt += ` · ${t("mil")} ${h.iso === (G ? G.iso : draft.iso) && G ? G.s.mil : milOf(h.iso)}`;
       else if (mapMode !== "pol") txt += ` · ${t("m_" + mapMode)} ${statOf(h.iso, mapMode)}`;
     }
     tip.textContent = txt; tip.hidden = false;
@@ -1765,11 +1789,11 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const p = AT.prov[selProv];
     el.hidden = false;
     el.innerHTML = `<h3><span>${flag(c.iso2)} ${esc(cname(selIso))}</span><button data-close aria-label="×">×</button></h3>
-      <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regime(c))} · ${t("bloc_" + c.bloc)}</div>
+      <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regime(c))} · ${t("bloc_" + c.bloc)} · ${t("mil")} <b>${me ? G.s.mil : milOf(selIso)}</b></div>
       ${p && p.n ? `<div class="relbar"><span>${t("province")}: <b>${esc(p.n)}</b></span><span class="mono">${t("population")} ${fmtPop(p.pop)}</span></div>` : ""}
       <div class="insp-grid">${["ec", "we", "se", "fr", "env"].map((k) => `<div>${t(k)}<b>${statOf(selIso, k)}</b></div>`).join("")}<div>${t("debt")}<b>${c.debt}%</b></div></div>
       ${me ? `<div class="relbar"><b>${t("you")}</b></div>` : `<div class="relbar"><span>${t("relation")}</span><b class="mono">${r > 0 ? "+" : ""}${r} · ${t("lg_" + relClass(r))}</b></div>
-      <div class="dip">${["summit", "trade", "aid", "sanction"].map((d) => `<button data-dip="${d}" ${can ? "" : "disabled"}>${t("d_" + d)}</button>`).join("")}</div>
+      <div class="dip">${["summit", "trade", "aid", "sanction", "threat"].map((d) => `<button data-dip="${d}" ${can && (d !== "threat" || canThreat(selIso)) ? "" : "disabled"}>${t("d_" + d)}</button>`).join("")}</div>
       ${G.phase !== "action" ? `<span class="hint" style="font-size:12px">${t("needAction")}</span>` : ""}`}`;
   }
 
@@ -1791,7 +1815,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     pending.add(key);
     const langName = LANGS.find((l) => l[0] === LANG)?.[1] || LANG;
     try {
-      const out = await SAMPLE.json(`Translate the Korean strings in this JSON object into ${langName} (${LANG}) for a political strategy game. Keep the same keys and structure, keep placeholders like {N} {T} {L} {NB} {RV} {AL} exactly as they are, keep empty strings empty. Natural, concise news-briefing tone. Reply with only the JSON object.\n\n${JSON.stringify(evPayload(ev))}`, { modelTier: "quick", cache: { gcTime: 86400000 } });
+      const out = await SAMPLE.json(`Translate the Korean strings in this JSON object into ${langName} (${LANG}) for a political strategy game. Keep the same keys and structure, keep placeholders like {N} {T} {L} {NB} {RV} {AL} {F} exactly as they are, keep empty strings empty. Natural, concise news-briefing tone. Reply with only the JSON object.\n\n${JSON.stringify(evPayload(ev))}`, { modelTier: "quick", cache: { gcTime: 86400000 } });
       if (out && out.title && Array.isArray(out.choices)) { EV_TR[key] = out; store.set("ev:" + key, out); }
     } catch (e) {
       if (e && (e.code === "not_granted" || e.code === "sampling_disabled" || e.code === "not_declared")) sampleState = "off";
@@ -1908,7 +1932,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const li = LANG === "ko" ? 0 : 1;
     if (key === "fl:crony") return flavorOf(G.iso)[0][li];
     if (key === "fl:slush") return flavorOf(G.iso)[1][li];
-    return CRIMES[key] ? CRIMES[key][li] : key;
+    return CRIMES[key] ? CRIMES[key][li] : STR.ko["cr_" + key] ? t("cr_" + key) : key;
   }
 
   // ── 선거 운동·권력 투쟁·폭로 사건 ──
@@ -2068,6 +2092,306 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   ];
   for (const e of CAMP_EVENTS) { EVENTS.push(e); EV[e.id] = e; }
 
+  // ───────── 전쟁 ─────────
+  // 군사력 0~100 근사: SIPRI 2025 군사비, Global Firepower 2026 순위를 참고한 게임 수치. 표에 없는 나라는 milOf가 산출.
+  const MIL = { USA: 100, RUS: 92, CHN: 90, IND: 80, KOR: 74, FRA: 72, JPN: 71, GBR: 71, TUR: 69, ITA: 66, BRA: 63, DEU: 62, PAK: 60, ISR: 60, IDN: 58, IRN: 56, EGY: 55, UKR: 55, POL: 54, SAU: 52, AUS: 52, TWN: 50, ESP: 50, VNM: 49, PRK: 48, THA: 46, DZA: 45, CAN: 45, GRC: 44, MEX: 42 };
+  const MILC = {};
+  function milOf(iso) {
+    if (MIL[iso] || MILC[iso]) return MIL[iso] || MILC[iso];
+    const c = C[iso]; if (!c) return 20;
+    const id = AT.isoToC[iso]?.id;
+    let pop = 0;
+    if (id !== undefined) for (const k in AT.prov) if (AT.prov[k].c === id) pop += AT.prov[k].pop || 0;
+    const v = Math.round(clamp(c.ec * 0.3 + c.se * 0.15 + (pop ? Math.log10(pop) * 5 - 25 : 5) + (c.tags.includes("nuke") ? 15 : 0), 5, 45));
+    if (pop) MILC[iso] = v;
+    return v;
+  }
+  const REGK = { dem: 1.3, hyb: 1, aut: 0.7 };           // 체제별 전쟁 지지도 민감도
+  const GIVE = { border: 0.4, regime: 0.22, humbl: 0.12 }; // 위기 단계 상대 양보 기본 확률
+  const JOIN = { border: 1, regime: 0.6, humbl: 0.35 };    // 목표가 클수록 우방 참전 ↓
+  const OUTCOME = { win: { se: 6, as: 5, ap: 4 }, white: { ap: 2 }, lose: { se: -8, as: -8, ap: -10 } };
+  const LOSE_REG = { dem: { ap: -12 }, hyb: { as: -6 }, aut: { as: -20 } };
+  const WAR_PTS = { win: { def: 120, atk: 40 }, white: { def: 0, atk: 0 }, lose: { def: -120, atk: -120 } };
+  const ACTIVE_WARS = [["RUS", "UKR"]]; // [공격 측, 방어 측] — 시작 옵션
+  const atWar = (iso) => !!G.war.find((w) => w.foe === iso);
+  const canThreat = (iso) => !isCamp() && !G.crisis && G.war.length < 2 && !atWar(iso) && (G.rel[iso] ?? 0) <= -40 && (G.truce[iso] ?? -1) <= G.q && G.q < G.Q - 2 && ((NEIGH[G.iso] || []).includes(iso) || G.s.mil >= 60);
+  const termsOf = (w) => w.front >= 30 ? "win" : w.front <= -30 ? "lose" : "white";
+
+  // 한 분기 전투. G에 의존하지 않아 simWar에서도 쓴다. me = { iso, mil, se, fis, reg }
+  function warStep(w, me) {
+    const f = C[w.foe], fm = milOf(w.foe);
+    const pw = (m, se, fis, al) => m * (0.6 + 0.4 * se / 100) * (fis < 20 ? 0.75 : fis < 40 ? 0.9 : 1) + al.reduce((a, x) => a + milOf(x) * 0.3, 0);
+    const mp = pw(me.mil, me.se, me.fis, w.allies.concat(w.aid.slice(0, 1))), fp = pw(fm, f.se, 60, w.foeAllies);
+    const p = mp / (mp + fp);
+    const lo = C[me.iso]?.tags.includes("nuke") ? -60 : -100, hi = f.tags.includes("nuke") ? 60 : 100;
+    const before = w.front;
+    w.front = Math.round(clamp(w.front + (p - 0.5) * 130 + rand(-20, 20) + (w.side === "def" ? 5 : -5), lo, hi));
+    w.dF = w.front - before;
+    w.casQ = Math.round((Math.abs(w.dF) * 0.12 + 1) * (me.mil + fm) / 40);
+    w.cas += w.casQ;
+    const drain = (rk) => (3 + w.casQ * 0.5 + Math.min(w.age, 6) * 1.5) * rk;
+    w.sup = Math.round(clamp(w.sup - drain(REGK[me.reg]) + w.front / 8 - (me.fis < 15 ? 5 : 0), -100, 100));
+    w.foeSup = Math.round(clamp(w.foeSup - drain(REGK[regime(f)]) - w.front / 8, -100, 100));
+    w.age++;
+    if (w.front >= 80 || w.foeSup <= 0) return "win";
+    if (w.front <= -80 || w.sup <= 0) return "lose";
+    if (Math.random() < clamp(0.04 + Math.abs(w.front) / 150 + (60 - Math.min(w.sup, w.foeSup)) / 110, 0.04, 0.9)) return termsOf(w);
+    return null;
+  }
+  function startWar(foe, side, goal, age = 0) {
+    const k = JOIN[goal] * (side === "def" ? 1.4 : 1);
+    const others = ISOS.filter((x) => x !== G.iso && x !== foe).sort((a, b) => (G.rel[b] ?? 0) - (G.rel[a] ?? 0));
+    const allies = others.filter((x) => (G.rel[x] ?? 0) >= 60 && Math.random() < 0.35 * k).slice(0, 3);
+    const aid = others.filter((x) => !allies.includes(x) && (G.rel[x] ?? 0) >= 40 && (G.rel[x] ?? 0) < 60 && Math.random() < 0.3 * k).slice(0, 3);
+    const pat = { R: "RUS", C: "CHN", W: "USA" }[C[foe].bloc];
+    const foeAllies = pat && pat !== foe && pat !== G.iso && (G.rel[pat] ?? 0) < 20 && Math.random() < 0.4 ? [pat] : [];
+    G.war.push({ foe, side, goal, front: 0, sup: side === "def" ? 70 : 60, foeSup: 60, cas: 0, age, a0: age, allies, aid, foeAllies });
+    G.rel[foe] = -100;
+    const F = cname(foe);
+    addLog(t(age ? "w_ongoing" : side === "atk" ? "w_startAtk" : "w_startDef", { F }), "big");
+    if (side === "atk" && !age) {
+      for (const x of others) G.rel[x] = clamp((G.rel[x] ?? 0) - (C[x].bloc === C[G.iso].bloc ? 2 : 5), -100, 100);
+      if (Math.random() < 0.5) { applyFx({ ec: -3 }); addLog(t("w_sanc"), "news"); }
+    }
+    if (allies.length || aid.length) addLog(t("w_allies", { a: allies.concat(aid).map(cname).join(", ") }));
+    if (foeAllies.length) addLog(t("w_foeAllies", { a: cname(foeAllies[0]), F }));
+    const nbs = [...new Set((NEIGH[G.iso] || []).concat(NEIGH[foe] || []))].filter((x) => C[x] && x !== G.iso && x !== foe);
+    if (nbs.length) addLog(t("w_spill", { a: nbs.slice(0, 4).map(cname).join(", ") }), "news");
+    if (C[foe].tags.includes("nuke")) G.queue.push({ id: "w_nuke", at: G.q + 1 });
+  }
+  function endWar(w, res) {
+    G.war = G.war.filter((x) => x !== w);
+    G.truce[w.foe] = G.q + 4;
+    const reg = regime(C[G.iso]);
+    const big = res === "lose" && (w.front <= -60 || w.sup <= 0);
+    const fx = { ...OUTCOME[res] };
+    if (res === "win" && w.side === "atk") fx.ap = 2;
+    if (big) mergeD(fx, LOSE_REG[reg]);
+    const d = applyFx(fx);
+    G.rel[w.foe] = clamp(G.rel[w.foe] + (res === "white" ? 30 : 15), -100, 100);
+    if (big && reg === "hyb" && Math.random() < 0.6) G.flags.defeat = true;
+    const dur = Math.max(1, w.age - (w.a0 || 0));
+    G.wars.push({ foe: w.foe, side: w.side, res, dur, cas: w.cas });
+    const text = t("w_end_" + res, { F: cname(w.foe), n: dur, c: w.cas });
+    addLog(text, "big");
+    genFeed("war", { event: text, choice: "", result: text, bad: res === "lose" });
+    return { text, d };
+  }
+  function resolveWars() {
+    const s = G.s, reg = regime(C[G.iso]);
+    for (const w of G.war.slice()) {
+      const first = w.age === 0;
+      const res = warStep(w, { iso: G.iso, mil: s.mil, se: s.se, fis: s.fis, reg });
+      applyFx({ ec: -ri(1, w.side === "def" ? 4 : 2), fis: -Math.round(3 + milOf(w.foe) / 20) + w.aid.length, se: Math.round(w.dF / 8), env: -1,
+        ap: first ? ri(3, 8) + (w.side === "def" ? 2 : 0) : Math.round(4 * 0.5 ** w.age - w.cas / 40 - (w.front < -20 ? 2 : 0)) });
+      if (res) endWar(w, res);
+      else addLog(t("w_q", { F: cname(w.foe), f: w.front, c: w.casQ }), "news");
+    }
+    // 적대국이 먼저 위기를 거는 경우 (방어전)
+    if (G.crisis || G.war.length >= 2 || G.q < 1 || G.q >= G.Q - 2) return;
+    for (const k of Object.keys(HOSTILE)) {
+      const [a, b] = k.split("-"), foe = a === G.iso ? b : b === G.iso ? a : null;
+      if (!foe || !C[foe] || (G.rel[foe] ?? 0) > -60 || milOf(foe) <= s.mil || atWar(foe) || (G.truce[foe] ?? -1) > G.q) continue;
+      const p = 0.02 + (C[foe].tags.includes("conflict") || C[G.iso].tags.includes("conflict") ? 0.015 : 0);
+      if (Math.random() < p) { G.crisis = { foe, by: "foe" }; G.queue.push({ id: "w_ultim", at: G.q + 1 }); addLog(t("w_crisisFoe", { F: cname(foe) }), "big"); return; }
+    }
+  }
+  // 사건 선택지의 war(위기 진행)·wx(전쟁 수치) 처리
+  function warHook(c) {
+    const out = { text: "", d: {} };
+    const w = G.war.find((x) => x.foe === G.ctx.F) || G.war[0];
+    if (c.wx && w) for (const [k, v] of Object.entries(c.wx)) w[k] = clamp(w[k] + v, -100, 100);
+    const cr = G.crisis;
+    if (!c.war || !cr) return out;
+    const [kind, arg] = c.war.split(":");
+    const F = cname(cr.foe);
+    if (kind === "goal") {
+      cr.goal = arg;
+      const give = GIVE[arg] * 2 * G.s.mil / (G.s.mil + milOf(cr.foe)), r = Math.random();
+      if (r < give) { G.crisis = null; G.truce[cr.foe] = G.q + 4; out.d = applyFx({ ap: 4, as: 3, se: 2 }); G.rel[cr.foe] = clamp(G.rel[cr.foe] - 10, -100, 100); out.text = t("w_conceded", { F }); }
+      else if (r < give + 0.25) { G.queue.push({ id: "w_mediate", at: G.q + 1 }); out.text = t("w_mediating", { F }); }
+      else { G.queue.push({ id: "w_brink", at: G.q + 1 }); out.text = t("w_countered", { F }); }
+    } else if (kind === "medreq") { G.queue.push({ id: "w_mediate", at: G.q + 1 }); out.text = t("w_mediating", { F }); }
+    else if (kind === "resist" && Math.random() < 0.3) { G.crisis = null; G.truce[cr.foe] = G.q + 4; out.text = t("w_foeBacked", { F }); }
+    else if (kind === "war" || kind === "resist") { G.crisis = null; startWar(cr.foe, cr.by === "me" && kind === "war" ? "atk" : "def", cr.goal || "border"); }
+    else if (kind === "end") { G.crisis = null; G.truce[cr.foe] = G.q + 4; }
+    return out;
+  }
+  function peace(iso) {
+    const w = G.war.find((x) => x.foe === iso);
+    if (!w || G.phase !== "action" || G.pc <= 0) return;
+    G.pc -= 1;
+    const terms = termsOf(w);
+    const p = terms === "lose" ? 1 : clamp((terms === "win" ? 0.15 : 0.35) + (100 - w.foeSup) / 150 + Math.max(0, w.front) / 200, 0.05, 0.9);
+    if (Math.random() < p) { const r = endWar(w, terms); G.acted.push({ text: r.text, d: r.d, bad: terms === "lose" }); }
+    else { const text = t("w_peaceNo", { F: cname(iso) }); w.foeSup = Math.min(100, w.foeSup + 3); G.acted.push({ text, d: {}, bad: true }); addLog(text); }
+    if (!checkEnd()) { render(); updateMap(); }
+  }
+  function warView() {
+    if (!G.war || (!G.war.length && !G.crisis)) return "";
+    const cr = G.crisis ? `<div class="warn">${t("w_crisisNow", { F: esc(cname(G.crisis.foe)) })}</div>` : "";
+    return cr + G.war.map((w) => {
+      const bar = w.front >= 0 ? `left:50%;width:${w.front / 2}%;background:var(--good)` : `left:${50 + w.front / 2}%;width:${-w.front / 2}%;background:var(--bad)`;
+      return `<div class="warcard"><div class="wc-head"><b>${flag(C[w.foe].iso2)} ${esc(cname(w.foe))}</b><span class="mono">${t("ws_" + w.side)} · ${t("w_qn", { n: w.age - (w.a0 || 0) + 1 })}</span></div>
+        <div class="front" role="img" aria-label="${t("w_front")} ${w.front}"><span style="${bar}"></span></div>
+        <div class="wc-row"><span>${t("w_front")} <b class="mono">${w.front > 0 ? "+" : ""}${w.front}</b></span><span>${t("w_sup")} <b class="mono">${w.sup}</b></span><span>${t("w_foeSup")} <b class="mono">${w.foeSup}</b></span><span>${t("w_cas")} <b class="mono">${w.cas}k</b></span></div></div>`;
+    }).join("");
+  }
+  // 개발용: 콘솔에서 simWar("KOR", "PRK", 2000) — #demo 해시일 때만 노출
+  function simWar(a, b, n = 1000) {
+    const out = { win: 0, lose: 0, white: 0 }, qs = [];
+    for (let i = 0; i < n; i++) {
+      const w = { foe: b, side: "atk", front: 0, sup: 60, foeSup: 60, cas: 0, age: 0, allies: [], aid: [], foeAllies: [] };
+      let r = null;
+      while (!r && w.age < 40) r = warStep(w, { iso: a, mil: milOf(a), se: C[a].se, fis: 60, reg: regime(C[a]) });
+      out[r || "white"]++; qs.push(w.age);
+    }
+    qs.sort((x, y) => x - y);
+    const res = { ...out, mean: +(qs.reduce((s, x) => s + x, 0) / n).toFixed(2), median: qs[n >> 1], le3: qs.filter((x) => x <= 3).length / n, ge6: qs.filter((x) => x >= 6).length / n };
+    console.table(res);
+    return res;
+  }
+  if (DEMO) window.simWar = simWar;
+
+  Object.assign(STR.ko, {
+    mil: "군사력", m_war: "전쟁", lg_foe: "교전국", lg_foeAlly: "적 지원국", lg_wally: "참전 동맹", lg_aid: "원조국",
+    d_threat: "군사 위협", threatLog: "{c}에 군사적 경고를 보냈다. 국경에 긴장이 감돈다.",
+    w_startAtk: "{F}과(와)의 전쟁이 시작됐다. 우리 군이 먼저 움직였다.", w_startDef: "{F}이(가) 공격해 왔다. 전쟁이 시작됐다.", w_ongoing: "{F}과(와)의 전쟁이 계속되고 있다.",
+    w_allies: "{a}이(가) 우리 편에서 참전하거나 물자를 보내기로 했다.", w_foeAllies: "{a}이(가) {F}을(를) 지원하고 나섰다.", w_spill: "교전 여파로 주변국({a}) 경제도 흔들리고 있다.",
+    w_sanc: "선제 공격을 이유로 여러 나라가 경제 제재에 나섰다.", w_q: "{F} 전선 {f} · 이번 분기 사상자 {c}천 명.",
+    w_end_win: "{F}과(와)의 전쟁이 {n}분기 만에 우리 쪽에 유리하게 끝났다. 누적 사상자 {c}천 명.", w_end_white: "{F}과(와) {n}분기 만에 현상 유지로 휴전했다. 누적 사상자 {c}천 명.", w_end_lose: "{F}과(와)의 전쟁에서 {n}분기 만에 양보하고 물러났다. 누적 사상자 {c}천 명.",
+    w_conceded: "{F}이(가) 요구를 받아들이고 물러섰다.", w_mediating: "제3국이 중재에 나서기로 했다.", w_countered: "{F}이(가) 요구를 거부하고 맞대응에 나섰다.", w_foeBacked: "{F}이(가) 한발 물러서며 위기가 가라앉았다.",
+    w_crisisFoe: "{F}이(가) 국경에 병력을 집결시키고 있다. 외교 위기가 시작됐다.", w_crisisNow: "외교 위기 진행 중: {F}",
+    ws_atk: "공격", ws_def: "방어", w_qn: "{n}분기째", w_front: "전선", w_sup: "우리 지지도", w_foeSup: "상대 지지도", w_cas: "사상자",
+    w_acts: "전쟁 지휘", w_peace: "{F}에 강화 제안", w_terms_win: "예상 조건: 목표 달성", w_terms_white: "예상 조건: 현상 유지", w_terms_lose: "예상 조건: 우리가 양보", w_peaceNo: "{F}이(가) 강화 제안을 거절했다.",
+    e_defeat: "패전 실각", h_defeat: "패전 책임을 지고 권좌에서 밀려났습니다",
+    sc_war: "전쟁: {F} {r}", wr_win: "승리", wr_white: "휴전", wr_lose: "패전", w_hist: "전쟁 기록", w_histRow: "{F}({s}) {r}, {n}분기",
+    realWar: "진행 중인 분쟁 상태로 시작", realWar_d: "실제로 이어지고 있는 분쟁을 첫 분기부터 전쟁 상태로 둡니다",
+    cr_warGraft: "전시 방산 비리",
+  });
+  Object.assign(STR.en, {
+    mil: "Military", m_war: "War", lg_foe: "Enemy", lg_foeAlly: "Enemy backer", lg_wally: "Allied fighter", lg_aid: "Aid donor",
+    d_threat: "Threaten", threatLog: "Issued a military warning to {c}. Tension is rising on the border.",
+    w_startAtk: "War with {F} has begun. Our forces moved first.", w_startDef: "{F} attacked. War has begun.", w_ongoing: "The war with {F} continues.",
+    w_allies: "{a} will fight on our side or send supplies.", w_foeAllies: "{a} is backing {F}.", w_spill: "The fighting is shaking neighboring economies ({a}).",
+    w_sanc: "Several countries imposed sanctions over the first strike.", w_q: "{F} front {f} · {c}k casualties this quarter.",
+    w_end_win: "The war with {F} ended in our favor after {n} quarters. {c}k casualties in total.", w_end_white: "Ceasefire with {F} on the prewar lines after {n} quarters. {c}k casualties in total.", w_end_lose: "We gave ground to {F} and pulled out after {n} quarters. {c}k casualties in total.",
+    w_conceded: "{F} accepted the demands and backed down.", w_mediating: "A third country agreed to mediate.", w_countered: "{F} rejected the demands and escalated.", w_foeBacked: "{F} stepped back and the crisis eased.",
+    w_crisisFoe: "{F} is massing troops on the border. A diplomatic crisis has begun.", w_crisisNow: "Diplomatic crisis under way: {F}",
+    ws_atk: "Attacking", ws_def: "Defending", w_qn: "Quarter {n}", w_front: "Front", w_sup: "Our war support", w_foeSup: "Enemy support", w_cas: "Casualties",
+    w_acts: "War command", w_peace: "Offer peace to {F}", w_terms_win: "Likely terms: goals met", w_terms_white: "Likely terms: status quo", w_terms_lose: "Likely terms: we concede", w_peaceNo: "{F} rejected the peace offer.",
+    e_defeat: "Ousted in defeat", h_defeat: "You were forced out after losing the war",
+    sc_war: "War: {F} {r}", wr_win: "won", wr_white: "ceasefire", wr_lose: "lost", w_hist: "War record", w_histRow: "{F} ({s}) {r}, {n} quarters",
+    realWar: "Start in the ongoing conflict", realWar_d: "Puts a real conflict that is still under way at war from the first quarter",
+    cr_warGraft: "wartime arms graft",
+  });
+
+  // 전쟁 사건: {F}=전쟁·위기 상대. war=위기 진행 코드, wx=전쟁 수치(front/sup/foeSup) 변화
+  const atWarCond = (g) => g.war && g.war.length > 0;
+  const WAR_EVENTS = [
+    { id: "w_demand", chainOnly: true, dept: "국방부·외교부", title: "{F}에 무엇을 요구하겠습니까?",
+      body: "우리의 경고에 {F}이(가) 국경 병력을 늘렸습니다. 요구가 클수록 상대가 물러설 가능성은 줄고, 우방도 선뜻 나서지 않을 것입니다.",
+      choices: [
+        { t: "분쟁 지역에서 철수를 요구", s: "상대가 받아들일 여지가 있다", war: "goal:border", log: "{F}에 분쟁 지역 철수를 요구했다." },
+        { t: "정책 전환을 압박", s: "요구가 커서 우방 지지가 줄어든다", war: "goal:regime", log: "{F}에 대외 정책을 바꾸라고 압박했다." },
+        { t: "전면 굴복을 요구", s: "받아들여질 가능성이 매우 낮다", fx: { ap: 2 }, war: "goal:humbl", log: "{F}에 사실상의 항복을 요구했다." },
+        { t: "위협을 거둬들인다", s: "체면이 깎인다", fx: { ap: -4, as: -3 }, war: "end", log: "{F}에 대한 경고를 슬그머니 거둬들였다." },
+      ] },
+    { id: "w_brink", chainOnly: true, dept: "합동참모본부", title: "{F}이(가) 맞대응에 나섰습니다",
+      body: "{F}이(가) 요구를 거부하고 동원령을 내렸습니다. 국경에서 양측 병력이 마주하고 있습니다. 결정을 내려야 합니다.",
+      choices: [
+        { t: "군사 행동을 승인한다", s: "되돌릴 수 없다", war: "war", log: "{F}을(를) 상대로 군사 행동을 승인했다." },
+        { t: "물러선다", s: "체면 손실", fx: { ap: -5, as: -4 }, r: { F: 10 }, war: "end", log: "병력을 뒤로 물리고 위기를 접었다." },
+      ] },
+    { id: "w_mediate", chainOnly: true, dept: "외교부", title: "제3국이 중재를 제안했습니다",
+      body: "{AL}이(가) {F}과(와)의 위기를 중재하겠다고 나섰습니다. 양측이 조금씩 양보하는 안입니다.",
+      choices: [
+        { t: "중재안을 받아들인다", fx: { ap: 3, se: 1 }, r: { F: 10, al: 5 }, war: "end", log: "중재안을 받아들여 위기를 끝냈다." },
+        { t: "거부하고 무력을 쓴다", s: "되돌릴 수 없다", r: { al: -8 }, war: "war", log: "중재를 거부하고 군사 행동에 나섰다." },
+        { t: "거부하되 행동은 미룬다", fx: { ap: -3, as: -2 }, war: "end", log: "중재를 거부했지만 군사 행동은 보류했다." },
+      ] },
+    { id: "w_ultim", chainOnly: true, dept: "국가안보실", title: "{F}이(가) 최후통첩을 보냈습니다",
+      body: "{F}이(가) 국경에 병력을 집결시키고 분쟁 지역에서 물러나라고 요구했습니다. 거부하면 무력을 쓰겠다는 입장입니다.",
+      choices: [
+        { t: "거부하고 방어 태세에 들어간다", s: "전쟁이 날 수 있다", fx: { se: 2, ap: 2 }, war: "resist", log: "최후통첩을 거부하고 방어 태세를 갖췄다." },
+        { t: "요구 일부를 받아들인다", s: "전쟁은 피하지만 체면 손실", fx: { ap: -6, as: -4, se: -3 }, r: { F: 15 }, war: "end", log: "요구 일부를 받아들여 충돌을 피했다." },
+        { t: "국제사회에 중재를 요청한다", fx: { fat: 6 }, r: { al: 4 }, war: "medreq", log: "국제사회에 중재를 공식 요청했다." },
+      ] },
+    { id: "w_nuke", chainOnly: true, dept: "합동참모본부", title: "{F}은(는) 핵보유국입니다",
+      body: "합참은 {F}이(가) 전세가 크게 기울면 핵 사용을 위협할 수 있다고 경고합니다. 완승은 사실상 불가능하며, 확전을 피하는 원칙이 필요합니다.",
+      choices: [
+        { t: "제한전 원칙을 공개 천명", fx: { ap: 2, se: -1 }, wx: { foeSup: -5 }, log: "확전하지 않겠다는 제한전 원칙을 밝혔다." },
+        { t: "핫라인으로 비공개 협상", fx: { as: -1 }, wx: { sup: -3, foeSup: -8 }, log: "상대 지도부와 비공개 핫라인을 열었다." },
+        { t: "억제력 과시 훈련", s: "확전 위험", fx: { se: 3 }, risk: { p: 0.4, fx: { se: -8, ec: -4, ap: -5 }, log: "상대가 맞불 훈련에 나서며 긴장이 위험 수위까지 올랐다." }, log: "대규모 억제력 과시 훈련을 벌였다." },
+      ] },
+    { id: "w_mobil", cond: atWarCond, w: 3, dept: "국방부", title: "동원령을 내릴까요?",
+      body: "{F} 전선의 병력이 부족하다는 보고입니다. 동원 규모에 따라 전력과 민생이 함께 움직입니다.",
+      choices: [
+        { t: "부분 동원령", fx: { mil: 4, we: -2, ec: -2, ap: -2 }, wx: { sup: -3, front: 4 }, log: "부분 동원령을 내렸다." },
+        { t: "예비군만 소집", fx: { mil: 2, fis: -3 }, log: "예비군을 소집했다." },
+        { t: "동원하지 않는다", fx: { ap: 1 }, wx: { front: -5 }, log: "추가 동원 없이 현 병력으로 버티기로 했다." },
+      ] },
+    { id: "w_draft", cond: (g) => atWarCond(g) && !isReg(g, "aut"), w: 2, dept: "국방부", title: "징집에 대한 반발이 커지고 있습니다",
+      body: "징집 대상 청년과 가족들이 형평성 문제를 제기합니다. 일부는 국외로 빠져나가고 있습니다.",
+      choices: [
+        { t: "징집 유예를 넓힌다", fx: { ap: 3, mil: -2 }, log: "징집 유예 범위를 넓혔다." },
+        { t: "원칙대로 강행", fx: { ap: -4, mil: 3 }, wx: { sup: -4 }, log: "예외 없는 징집을 강행했다." },
+        { t: "전선 순환 복무 도입", fx: { fis: -4 }, wx: { sup: 3 }, log: "복무 기간을 줄이고 순환 배치를 도입했다." },
+      ] },
+    { id: "w_civ", cond: atWarCond, w: 2, repeat: true, dept: "국방부", title: "민간인 피해 보도가 나왔습니다",
+      body: "{F}과(와)의 교전 지역에서 민간인 피해가 났다는 보도입니다. 양측이 서로 책임을 주장하고 있습니다.",
+      choices: [
+        { t: "독립 조사를 받아들이고 보상", fx: { fis: -3, ap: 2 }, r: { al: 5 }, log: "국제 독립 조사를 받아들이고 피해 보상을 약속했다." },
+        { t: "교전 규칙을 강화", fx: { ap: 1 }, r: { al: 3 }, wx: { front: -3 }, log: "민간 지역 인근 작전 규칙을 강화했다." },
+        { t: "군 발표만 되풀이한다", fx: { ap: -1 }, risk: { p: 0.4, fx: { ap: -6 }, r: { al: -6 }, log: "반박 영상이 공개되며 국제 여론이 돌아섰다." }, log: "군 발표 외에는 대응하지 않았다." },
+      ] },
+    { id: "w_pow", cond: atWarCond, w: 2, dept: "국방부", title: "포로 교환 제안이 왔습니다",
+      body: "{F}이(가) 중재국을 통해 포로 맞교환을 제안했습니다.",
+      choices: [
+        { t: "맞교환에 응한다", fx: { ap: 4 }, r: { F: 5 }, wx: { sup: 4 }, log: "포로 맞교환에 합의했다." },
+        { t: "협상 지렛대로 남긴다", fx: { ap: -2 }, wx: { foeSup: -4 }, log: "포로 교환을 미루고 협상 카드로 남겼다." },
+      ] },
+    { id: "w_bonds", cond: atWarCond, w: 2, dept: "재무부", title: "전비 조달 방법을 정해야 합니다",
+      body: "전쟁 비용이 예산을 크게 넘어섰습니다. 재무부는 세 가지 안을 올렸습니다.",
+      choices: [
+        { t: "전시 국채 발행", fx: { fis: 8, ec: -1 }, log: "전시 국채를 발행했다." },
+        { t: "전쟁세 신설", fx: { fis: 6, ap: -4 }, wx: { sup: -2 }, log: "한시 전쟁세를 신설했다." },
+        { t: "우방에 차관 요청", fx: { fis: 6 }, r: { al: 3 }, log: "{AL}에 긴급 차관을 요청했다." },
+      ] },
+    { id: "w_cmd", cond: atWarCond, w: 2, dept: "합동참모본부", title: "군 지휘부를 바꿀까요?",
+      body: "{F} 전선의 작전이 지지부진하다는 평가가 나옵니다. 젊은 지휘관을 발탁하자는 의견과 지휘 안정이 우선이라는 의견이 맞섭니다.",
+      choices: [
+        { t: "젊은 지휘관을 발탁", wx: { front: 6 }, risk: { p: 0.35, fx: { se: -4, ap: -3 }, log: "새 지휘부의 첫 작전이 실패했다." }, log: "전선 지휘부를 전면 교체했다." },
+        { t: "현 지휘부 유임", fx: { as: 2 }, log: "지휘 안정을 이유로 현 지휘부를 유임했다." },
+      ] },
+    { id: "w_graft", cond: atWarCond, w: 2, dept: "비서실", title: "군수업체가 '사례'를 약속합니다",
+      body: "급한 무기 조달을 틈타 한 군수업체가 단가를 부풀린 계약을 제안했습니다. 성사되면 감사 표시를 하겠다고 합니다.",
+      choices: [
+        { t: "거절한다", fx: { as: -1 }, log: "부풀린 납품 계약을 거절했다." },
+        { t: "받아들인다", s: "불법", fx: { slush: 15, sus: 16, fis: -4 }, crime: "warGraft", log: "부풀린 군수 계약을 승인하고 뒷돈을 챙겼다." },
+      ] },
+    { id: "w_protest", cond: atWarCond, w: 2, repeat: true, dept: "치안 담당", title: "반전 시위가 커지고 있습니다",
+      body: "수도 광장에 전쟁을 멈추라는 시민들이 모였습니다. 참가자는 계속 늘고 있습니다.",
+      choices: [
+        { t: "집회를 보장한다", fx: { ap: 2 }, wx: { sup: -5 }, log: "반전 집회를 보장했다." },
+        { t: "해산시킨다", fx: { ap: -3, as: 2 }, log: "반전 집회를 해산시켰다." },
+        { t: "협상 의지를 밝힌다", fx: { ap: 3 }, wx: { sup: -2, foeSup: -4 }, log: "조건이 맞으면 협상하겠다고 밝혔다." },
+      ] },
+    { id: "w_refugee", cond: atWarCond, w: 1, dept: "내무부", title: "피란민이 몰려들고 있습니다",
+      body: "교전 지역 주민 수십만 명이 안전한 지역으로 이동하고 있습니다.",
+      choices: [
+        { t: "임시 거처와 지원금", fx: { we: 2, fis: -4 }, r: { al: 3 }, log: "피란민 임시 거처와 지원금을 마련했다." },
+        { t: "지방정부에 맡긴다", fx: { we: -3, ap: -2 }, log: "피란민 대응을 지방정부에 맡겼다." },
+      ] },
+    { id: "w_arms", cond: atWarCond, w: 2, dept: "국방부", title: "무기 긴급 도입이 필요합니다",
+      body: "탄약과 방공 무기가 빠르게 줄고 있습니다. 해외 구매와 국내 증산 중 무엇을 택할지 정해야 합니다.",
+      choices: [
+        { t: "우방에서 긴급 구매", fx: { fis: -7, mil: 4 }, r: { al: 4 }, log: "{AL}에서 무기를 긴급 구매했다." },
+        { t: "국내 생산을 늘린다", fx: { fis: -5, ec: 1, mil: 2 }, log: "국내 방산 공장 증산을 지시했다." },
+      ] },
+  ];
+  for (const e of WAR_EVENTS) { EVENTS.push(e); EV[e.id] = e; }
+
   let G = null;
   const SURN = { ko: ["김", "이", "박", "최", "정", "강", "윤", "한", "서", "오"], x: ["Alvarez", "Novak", "Okafor", "Sato", "Haddad", "Larsen", "Mendes", "Kaur", "Petrov", "Nguyen", "Moreau", "Schmidt", "Rossi", "Kim"] };
   const GIVN = { ko: ["민준", "서연", "도윤", "하은", "지호", "유진", "태경", "은솔", "가람", "예린"], x: ["Ana", "Leo", "Amara", "Yuki", "Omar", "Ingrid", "Rafael", "Priya", "Elena", "Minh", "Claire", "Jonas", "Sofia", "Hana"] };
@@ -2101,10 +2425,10 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const startMode = mode;
     const origin = C[draft.origin] ? draft.origin : c.iso;
     G = { iso: c.iso, origin, name, ideo: draft.ideo, mode, startMode, Q: reg === "aut" ? 20 : c.term * 4,
-      s: { ap: 0, ec: c.ec, we: c.we, se: c.se, as: c.as, env: c.env, fis: Math.round(clamp(85 - c.debt * 0.25, 20, 90)), fat: 10 },
+      s: { ap: 0, ec: c.ec, we: c.we, se: c.se, mil: milOf(c.iso), as: c.as, env: c.env, fis: Math.round(clamp(85 - c.debt * 0.25, 20, 90)), fat: 10 },
       c: null, x: { sus: 0, slush: 0, media: 0, exposed: 0, crimes: [], scandals: [] },
       q: 0, cq: 0, CQ: 6, phase: "event", cur: null, ctx: {}, result: null, pc: 2, used: {}, seen: {}, flags: {}, queue: [], log: [], hist: [], chist: [],
-      end: null, after: null, acted: [], rel: {}, lastEv: null, electionNote: null, feed: [], postedQ: -1, pendingScandal: null };
+      end: null, after: null, acted: [], rel: {}, lastEv: null, electionNote: null, feed: [], postedQ: -1, pendingScandal: null, war: [], wars: [], truce: {}, crisis: null };
     if (draft.ideo === "l") { G.s.we += 3; G.s.ec -= 2; }
     if (draft.ideo === "r") { G.s.ec += 2; G.s.se += 2; G.s.we -= 2; }
     if (draft.ideo === "c") { G.s.as += 4; }
@@ -2119,6 +2443,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       addLog(autLadder(c) ? t("campStartAut", { L: name, N: cname(c.iso) }) : t("campStart", { L: name, N: cname(c.iso), S: t("ideo_" + draft.ideo), I: t("ideo_" + draft.ideo) }), "big");
     } else {
       becomeLeader(true);
+      const aw = draft.realWar && ACTIVE_WARS.find((pr) => pr.includes(c.iso));
+      if (aw) { startWar(aw[0] === c.iso ? aw[1] : aw[0], aw[0] === c.iso ? "atk" : "def", "border", 4); G.war[0].sup = 55; G.war[0].foeSup = 55; }
     }
     focusIso(c.iso);
     startTurn();
@@ -2157,7 +2483,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   function applyRel(r) {
     const out = [];
     for (const [k, v] of Object.entries(r || {})) {
-      const iso = k === "nb" ? G.ctx.nb : k === "rv" ? G.ctx.rv : k === "al" ? G.ctx.al : k === "O" ? G.origin : k;
+      const iso = k === "nb" ? G.ctx.nb : k === "rv" ? G.ctx.rv : k === "al" ? G.ctx.al : k === "O" ? G.origin : k === "F" ? G.ctx.F : k;
       if (!iso || !C[iso] || iso === G.iso) continue;
       G.rel[iso] = clamp((G.rel[iso] ?? 0) + v, -100, 100);
       out.push([iso, v]);
@@ -2174,13 +2500,13 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const majors = Array.from(new Set(nbs.concat(["USA", "CHN", "RUS", "IND", "DEU", "JPN", "SAU", "TUR", "BRA"]))).filter((x) => x !== me && C[x]);
     const rv = majors.slice().sort((a, b) => (G.rel[a] ?? 0) - (G.rel[b] ?? 0))[0];
     const al = ISOS.filter((x) => x !== me).sort((a, b) => ((G.rel[b] ?? 0) + C[b].ec / 4) - ((G.rel[a] ?? 0) + C[a].ec / 4))[0];
-    G.ctx = { nb, rv, al, X: G.ctx && G.ctx.X };
+    G.ctx = { nb, rv, al, X: G.ctx && G.ctx.X, F: G.crisis ? G.crisis.foe : G.war && G.war.length ? pick(G.war).foe : null };
   }
   function fill(s) {
     if (!s) return "";
     const c = C[G.iso];
     const T = isCamp() ? t(autLadder(c) ? "cand_aut" : c.gov === "PM" ? "cand_pm" : "cand_dem") : title(c);
-    return s.replace(/\{(N|T|L|NB|RV|AL|X|O)\}/g, (_, k) => ({ N: cname(G.iso), T, L: G.name, NB: cname(G.ctx.nb), RV: cname(G.ctx.rv), AL: cname(G.ctx.al), X: G.ctx.X ? crimeLabel(G.ctx.X) : "", O: cname(G.origin) }[k] || ""));
+    return s.replace(/\{(N|T|L|NB|RV|AL|X|O|F)\}/g, (_, k) => ({ N: cname(G.iso), T, L: G.name, NB: cname(G.ctx.nb), RV: cname(G.ctx.rv), AL: cname(G.ctx.al), X: G.ctx.X ? crimeLabel(G.ctx.X) : "", O: cname(G.origin), F: G.ctx.F ? cname(G.ctx.F) : "" }[k] || ""));
   }
 
   // ── 사건 고르기 ──
@@ -2234,6 +2560,9 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     }
     if (c.flag) G.flags[c.flag] = true;
     if (c.chain) G.queue.push({ id: c.chain.id, at: G.q + c.chain.after });
+    const wh = warHook(c);
+    if (wh.text) text += " " + wh.text;
+    mergeD(d, wh.d);
     G.result = { pick: i, text, d, bad, rels };
     addLog(text, ev.scandal ? "big" : "");
     G.phase = "action";
@@ -2269,7 +2598,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         else { fx = { we: 4, ec: 3, fis: -8, fat: 6 }; text = t("l_stim"); }
       }
       if (id === "tax") { fx = { ec: 4, we: -2, fis: -6, fat: 6 }; text = t("l_tax"); }
-      if (id === "def") { fx = { se: 6, fis: -6, fat: 6 }; text = t("l_def"); }
+      if (id === "def") { fx = { se: 6, mil: 2, fis: -6, fat: 6 }; text = t("l_def"); }
       if (id === "green") { fx = { env: 6, fis: -5, ec: -1, fat: 6 }; text = t("l_green"); }
       if (id === "rest") { fx = { fat: -30 }; text = t("l_rest"); }
     }
@@ -2324,6 +2653,11 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       else { fx = { fat: 6 }; rv = -2; text = t("tradeNo", { c }); bad = true; }
     }
     if (kind === "aid") { fx = { fis: -3, ap: -1 }; rv = 10; text = t("aidLog", { c }); }
+    if (kind === "threat") {
+      if (!canThreat(iso)) return;
+      G.crisis = { foe: iso, by: "me", goal: null }; G.queue.push({ id: "w_demand", at: G.q + 1 });
+      fx = { se: 1, fat: 6 }; rv = -10; text = t("threatLog", { c });
+    }
     if (kind === "sanction") { const hostile = (G.rel[iso] ?? 0) < 0; fx = { ap: hostile ? 2 : -2, ec: -1 }; rv = -25; text = t("sancLog", { c }); }
     const d = applyFx(fx);
     G.rel[iso] = clamp((G.rel[iso] ?? 0) + rv, -100, 100);
@@ -2409,6 +2743,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     for (const iso of Object.keys(G.rel)) { const b = rel0(G.iso, iso) + (iso === G.origin && G.origin !== G.iso ? 20 : 0); G.rel[iso] = Math.round(G.rel[iso] + (b - G.rel[iso]) * 0.06); }
     const target = s.ec * 0.3 + s.we * 0.3 + s.se * 0.15 + s.as * 0.1 + s.env * 0.05 + 6 - G.x.exposed * 2;
     s.ap = clamp(Math.round(s.ap + (target - s.ap) * 0.3 - 1 + (G.q < 2 ? 2 : 0) + rand(-2, 2)));
+    resolveWars();
     G.hist.push(s.ap);
     const news = [];
     if (s.ec < 35) news.push("n_bad_ec"); if (s.ec > 70) news.push("n_good_ec"); if (s.we < 35) news.push("n_bad_we");
@@ -2443,6 +2778,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (isCamp()) return false;
     const s = G.s, c = C[G.iso], reg = regime(c);
     if (s.fis <= 0) { finish("default"); return true; }
+    if (G.flags.defeat) { finish("defeat"); return true; }
     if (s.se <= 3) { finish("war"); return true; }
     if (reg === "aut") {
       if (s.as <= 12) { finish("coup"); return true; }
@@ -2458,9 +2794,9 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const x = G.x;
     const m = "$" + x.slush + "M";
     G.afterKind = "none";
-    if (["primary", "lostElection", "purged", "war", "default"].includes(kind) && !x.crimes.length) return null;
+    if (["primary", "lostElection", "purged", "war", "default", "defeat"].includes(kind) && !x.crimes.length) return null;
     if (!x.crimes.length) { G.afterKind = "clean"; return t("after_clean"); }
-    const ousted = ["impeach", "corrupt", "noconf", "rev", "coup", "purged"].includes(kind);
+    const ousted = ["impeach", "corrupt", "noconf", "rev", "coup", "purged", "defeat"].includes(kind);
     let p = x.sus / 100 + x.exposed * 0.15 + x.crimes.length * 0.04 + (ousted ? 0.25 : 0);
     if (reg === "aut" && !ousted) p *= 0.3;
     if (Math.random() < clamp(p, 0, 0.95)) {
@@ -2542,6 +2878,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     lines.push([t("sc_govBase", { v }), v * 10]);
     if (G.end === "reelect") { pts += 150; lines.push([t("sc_reelect"), 150]); }
     if (["retire", "reelect", "survive", "lost"].includes(G.end)) { pts += 100; lines.push([t("sc_full"), 100]); }
+    for (const w of G.wars || []) { const v = WAR_PTS[w.res][w.side]; if (v) { pts += v; lines.push([t("sc_war", { F: cname(w.foe), r: t("wr_" + w.res) }), v]); } }
     return { pts, lines };
   }
   // 사익 점수: 비자금과 비리, 그리고 끝까지 빠져나갔는지
@@ -2887,7 +3224,8 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
         <div class="poll-num"><strong class="mono">${s.ap}</strong><span>%</span></div>
         ${spark(G.hist, 50, "spark", G.Q, false)}
         <span class="src">${reg === "aut" ? t("pollAut") : t("pollSrc")}</span></div>
-      ${["ec", "we", "se", "as", "env", "fis", "fat"].map(row).join("")}
+      ${warView()}
+      ${["ec", "we", "se", "mil", "as", "env", "fis", "fat"].map(row).join("")}
       ${corruptRows()}
       <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span></div>
       ${w.length ? `<div class="warns">${w.map((x) => `<div class="warn">${x}</div>`).join("")}</div>` : ""}
@@ -2940,6 +3278,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
       <div class="agenda-head"><h3>${t(camp ? "agendaCamp" : "agenda")}</h3><span class="pc">${t("left")} ${dots}</span></div>
       ${on ? "" : `<p class="hint">${t("decideFirst")}</p>`}
       <div class="acts">${list.map((a) => `<button class="act" data-act="${a}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${label(a)}</b><span>${desc(a)}</span></button>`).join("")}</div>
+      ${!camp && G.war.length ? `<div class="dirty-head"><span class="label">${t("w_acts")}</span></div><div class="acts">${G.war.map((w) => `<button class="act" data-peace="${w.foe}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${t("w_peace", { F: esc(cname(w.foe)) })}</b><span>${t("w_terms_" + termsOf(w))}</span></button>`).join("")}</div>` : ""}
       <div class="dirty-head"><span class="label">${t("dirty")}</span><span class="hint" style="font-size:12px">${t("dirtyNote")}</span></div>
       <div class="acts dirty">${dl.map((a) => `<button class="act" data-dirty="${a}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${esc(dname(a))}</b><span>${t(`x_${a}_d`)}</span></button>`).join("")}</div>
       ${done}
@@ -2960,6 +3299,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
       <h2>${t("h_" + G.end)}</h2>
       <div class="verdict"><div class="grade">${sc.grade}</div><div class="verdict-txt"><span class="label">${t("verdict")}</span><b>${t("g_" + sc.grade)}</b><span>${t("nick")}: ${sc.nick} · ${t("score", { n: sc.v })}</span></div></div>
       ${story}
+      ${G.wars && G.wars.length ? `<div class="result"><span class="label">${t("w_hist")}</span><p>${G.wars.map((w) => esc(t("w_histRow", { F: cname(w.foe), s: t("ws_" + w.side), r: t("wr_" + w.res), n: w.dur }))).join(" · ")}</p></div>` : ""}
       ${G.after ? `<div class="result ${/구속|망명|arrest|fled/.test(G.after) ? "bad" : ""}"><span class="label">${t("after")}</span><p>${esc(G.after)}</p></div>` : ""}
       ${campEnd ? spark(G.chist, 110, "bigspark", G.CQ, true) : spark(G.hist, 110, "bigspark", G.Q, true)}
       <div class="finals">${finals}<div><span class="label">${t("slush")}</span><b>$${G.x.slush}M</b></div><div><span class="label">${t("crimes")}</span><b>${G.x.exposed}</b></div></div>
@@ -2995,6 +3335,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
           ${draft.err ? `<span class="field-err" role="alert">${esc(draft.err)}</span>` : ""}</div>
         <div class="field"><label class="label" for="osel">${t("origin")}</label>
           <div class="row"><select id="osel">${[`<option value="${draft.iso}" ${draft.origin === draft.iso ? "selected" : ""}>${t("origin_same")} (${esc(cname(draft.iso))})</option>`].concat(sorted.filter((i) => i !== draft.iso).map((i) => `<option value="${i}" ${i === draft.origin ? "selected" : ""}>${esc(cname(i))}</option>`)).join("")}</select></div></div>
+        ${ACTIVE_WARS.some((pr) => pr.includes(draft.iso)) ? `<div class="field"><label class="opt"><input type="checkbox" id="realwar" ${draft.realWar ? "checked" : ""}><b>${t("realWar")}</b><span>${t("realWar_d")}</span></label></div>` : ""}
         <div class="field"><span class="label">${t("ideo")}</span><div class="opts">${["l", "c", "r"].map(opt).join("")}</div></div>
         <button class="oath" data-start>${t("start")}</button>
       </div>
@@ -3022,6 +3363,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     else if (b.dataset.act) act(b.dataset.act);
     else if (b.dataset.dirty) dirty(b.dataset.dirty);
     else if (b.dataset.dip) dip(b.dataset.dip);
+    else if (b.dataset.peace) peace(b.dataset.peace);
     else if (b.dataset.mode) { mapMode = b.dataset.mode; updateMap(); }
     else if (b.dataset.zoom) zoomBy(+b.dataset.zoom);
     else if (b.hasAttribute("data-close")) { selIso = null; updateMap(); }
@@ -3046,6 +3388,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     if (e.target.name === "ideo") draft.ideo = e.target.value;
     if (e.target.name === "mode") draft.mode = e.target.value;
     if (e.target.id === "osel") draft.origin = e.target.value;
+    if (e.target.id === "realwar") draft.realWar = e.target.checked;
     if (e.target.id === "csel") { draft.iso = e.target.value; draft.origin = draft.iso; draft.name = randName(draft.iso); draft.err = ""; renderAll(); focusIso(draft.iso); }
     if (e.target.id === "langsel") {
       LANG = e.target.value; store.set("lang", LANG); document.documentElement.lang = LANG;
@@ -3056,6 +3399,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
   // ───────── 시작 ─────────
   function boot(data) {
     if (data && data.G) { G = data.G; if (data.draft) Object.assign(draft, data.draft); }
+    if (G) { G.war ??= []; G.wars ??= []; G.truce ??= {}; G.crisis ??= null; G.s.mil ??= milOf(G.iso); }
     document.documentElement.lang = LANG;
     initMap();
     renderAll();
@@ -3066,6 +3410,14 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     const mode = location.hash === "#democamp" ? "camp" : "gov";
     draft.iso = "KOR"; draft.origin = "KOR"; draft.name = "한가람"; draft.ideo = "c"; draft.mode = mode;
     newGame();
+    if (location.hash === "#demowar") {
+      choose(0); act("def");
+      startWar("PRK", "def", "border");
+      const R = Math.random; Math.random = () => 0.95; nextQuarter(); Math.random = R; // 예시 화면이 휴전으로 끝나지 않게 고정
+      if (G.phase === "event") choose(0);
+      mapMode = "war"; selIso = G.war[0] ? G.war[0].foe : null;
+      renderAll(); return;
+    }
     if (location.hash === "#demoend") {
       let guard = 0;
       while (G.phase !== "over" && guard++ < 60) {

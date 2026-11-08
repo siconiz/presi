@@ -5,6 +5,7 @@
 
 - 사건 카드 결재와 분기별 일정(정책·외교·뒷거래)
 - 비리·은폐·폭로 시스템과 퇴임 후 결말(구속, 망명, 끝까지 안 들킴)
+- 전쟁: 군사 위협 → 외교 위기(요구 수준 선택·상대 응답·중재) → 개전, 분기별 전선·전쟁 지지도·사상자, 동맹 참전·원조, 강화 협상, 체제별 패전 결과(혼합 체제는 실각 위험), 전쟁 지도 모드, 실제 진행 중인 분쟁(러시아–우크라이나)으로 시작하는 옵션
 - 국정 점수 + 사익 점수 = 종합 점수, 공유 리더보드
 - 가상 SNS 여론 피드와 다국어 번역(Claude 아티팩트의 `sample` 기능 사용)
 - Victoria 스타일 지도: 지형 음영, 주(州) 경계, 곡선 국가명, 도시, 강
@@ -29,11 +30,14 @@ python -m http.server 8000
 
 그다음 브라우저에서 `http://localhost:8000/world-leader.html`을 엽니다.
 리더보드 공유, 여론 피드, 번역은 Claude 아티팩트(`db`, `user`, `sample` 기능) 안에서만 동작합니다. 그 밖에서는 브라우저에 저장된 내 기록과 기본 반응 문구로 대체됩니다.
-`#demo`, `#democamp`, `#demoend`를 주소 끝에 붙이면 미리 진행된 화면을 볼 수 있습니다.
+`#demo`, `#democamp`, `#demoend`, `#demowar`(대한민국이 북한과 2분기째 전쟁 중)를 주소 끝에 붙이면 미리 진행된 화면을 볼 수 있습니다.
+`#demo…` 해시로 열면 브라우저 콘솔에서 `simWar("KOR", "PRK", 2000)`처럼 전쟁 결과 분포(승·패·휴전 수, 평균·중앙값 분기, 3분기 이하·6분기 이상 비율)를 확인할 수 있습니다.
 
 ## 데이터 출처
 
 - 국가 출발 수치: IMF WEO, World Bank WDI, Freedom House 2026, Global Peace Index 2026, EPI 2026, WGI 공개값을 0~100으로 근사한 게임 수치입니다.
+- 군사력(0~100): SIPRI Military Expenditure 2025와 Global Firepower 2026 순위를 참고한 근사치입니다. GFP는 가중치를 공개하지 않으므로 공식 수치가 아닙니다. 표에 없는 나라는 경제·안보 수치, 인구, 핵보유 여부로 산출합니다.
+- 전쟁 계수의 근거: 전쟁 지속 기간(Correlates of War 1823~2003, 중앙값 약 139일), 전쟁의 경제 비용(NBER w34389, Kiel Institute 2024), 결집 효과 연구, Goemans(2000)·Debs & Goemans(APSR)의 체제별 패전 지도자 연구. 설계 메모는 `docs/war-system-prompt.md`.
 - 지도(`atlas/`): Atlas 프로젝트 데이터를 가공했습니다.
   - Natural Earth (public domain)
   - NOAA ETOPO 2022 (public domain, doi:10.25921/fd45-gt74)
