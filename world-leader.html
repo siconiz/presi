@@ -256,6 +256,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .act { text-align: left; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r); background: transparent; display: flex; flex-direction: column; gap: 2px; transition: border-color .15s, background .15s; }
 .act:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .act:disabled { opacity: .42; cursor: not-allowed; }
+.act[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
 .act b { font-size: 13.5px; }
 .act span { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
 .next { align-self: flex-end; padding: 11px 20px; border: 0; border-radius: var(--r); background: var(--ink); color: var(--sheet); font-weight: 700; font-size: 15px; }
@@ -1400,6 +1401,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       ui.innerHTML = `<div class="modes" id="modes"></div><div class="zoom"><button data-zoom="1" aria-label="+">+</button><button data-zoom="-1" aria-label="−">−</button></div><div class="legend" id="legend"></div><div class="tip" id="tip" hidden></div><div class="inspector" id="insp" hidden></div><div class="attrib">${esc(t("attrib"))}</div>`;
       while (ui.firstChild) wrap.appendChild(ui.firstChild);
       mapReady = true;
+      if (G && G.war && G.war.length) { G.war.forEach(occupy); render(); }
       sizeMap();
       try { new ResizeObserver(() => { sizeMap(); }).observe(wrap); } catch { addEventListener("resize", sizeMap); }
       try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { AT.sig = ""; updateMap(); }); } catch {}
@@ -1526,11 +1528,13 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     }
     const meId = AT.isoToC[me]?.id ?? -1, selId = AT.isoToC[selIso]?.id ?? -1;
     const fids = new Set((G && G.war ? G.war : []).map((w) => AT.isoToC[w.foe]?.id).filter((x) => x !== undefined));
-    const sig = mapMode + "|" + meId + "|" + selId + "|" + [...fids].join(".") + "|" + Array.from(lut).join(",") + isDark();
+    const occ = new Uint8Array(65536); let occSig = "";
+    for (const w of (G && G.war) || []) { for (const id of w.occF || []) occ[id] = 1; for (const id of w.occM || []) occ[id] = 2; occSig += (w.occF || []).length + "/" + (w.occM || []).length + ","; }
+    const sig = mapMode + "|" + meId + "|" + selId + "|" + [...fids].join(".") + "|" + occSig + "|" + Array.from(lut).join(",") + isDark();
     if (sig === AT.sig) return;
     AT.sig = sig;
     const ink = isDark() ? [12, 16, 20] : [58, 46, 34];
-    const gold = tok("--me"), red = tok("--seal"), front = tok("--w-front");
+    const gold = tok("--me"), red = tok("--seal"), front = tok("--w-front"), hostile = tok("--r-hostile"), pid = AT.pid, hasOcc = occSig.length > 0;
     const out = AT.polImg.data, cty = AT.cty, edge = AT.edge, n = AT.pw * AT.ph, pw = AT.pw;
     const isFront = (i, c) => [cty[i + 1], cty[i - 1], cty[i + pw], cty[i - pw]].some((o) => c === meId ? fids.has(o) : o === meId);
     for (let i = 0, j = 0; i < n; i++, j += 4) {
@@ -1542,6 +1546,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         if (c === meId) { out[j] = gold[0]; out[j + 1] = gold[1]; out[j + 2] = gold[2]; out[j + 3] = 255; }
         else if (c === selId) { out[j] = red[0]; out[j + 1] = red[1]; out[j + 2] = red[2]; out[j + 3] = 255; }
         else { out[j] = ink[0]; out[j + 1] = ink[1]; out[j + 2] = ink[2]; out[j + 3] = e === 2 ? 190 : 120; }
+      } else if (hasOcc && occ[pid[i]] && ((i % pw) + ((i / pw) | 0)) % 8 < 4) {
+        const col = occ[pid[i]] === 1 ? gold : hostile; out[j] = col[0]; out[j + 1] = col[1]; out[j + 2] = col[2]; out[j + 3] = 235;
       } else if (e === 1) {
         out[j] = lut[k] * 0.78; out[j + 1] = lut[k + 1] * 0.78; out[j + 2] = lut[k + 2] * 0.78; out[j + 3] = Math.min(255, lut[k + 3] + 40);
       } else { out[j] = lut[k]; out[j + 1] = lut[k + 1]; out[j + 2] = lut[k + 2]; out[j + 3] = lut[k + 3]; }
@@ -1752,7 +1758,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const lg = $("#legend");
     if (mapMode === "pol") lg.innerHTML = `<span>${t("lg_pol")}</span>`;
     else if (mapMode === "rel") lg.innerHTML = ["me", "ally", "friend", "neutral", "cool", "hostile"].map((k) => `<span><i style="background:var(${k === "me" ? "--me" : "--r-" + k})"></i>${t("lg_" + k)}</span>`).join("") + `<span><i style="background:var(--land)"></i>${t("lg_nodata")}</span>`;
-    else if (mapMode === "war") lg.innerHTML = [["--me", "lg_me"], ["--r-hostile", "lg_foe"], ["--r-cool", "lg_foeAlly"], ["--w-ally", "lg_wally"], ["--w-aid", "lg_aid"], ["--w-front", "w_front"]].map(([v, k]) => `<span><i style="background:var(${v})"></i>${t(k)}</span>`).join("");
+    else if (mapMode === "war") lg.innerHTML = [["--me", "lg_me"], ["--r-hostile", "lg_foe"], ["--r-cool", "lg_foeAlly"], ["--w-ally", "lg_wally"], ["--w-aid", "lg_aid"], ["--w-front", "w_front"]].map(([v, k]) => `<span><i style="background:var(${v})"></i>${t(k)}</span>`).join("") + `<span><i style="background:repeating-linear-gradient(45deg,var(--r-hostile) 0 3px,transparent 3px 6px)"></i>${t("lg_occ")}</span>`;
     else lg.innerHTML = `<span>${t("m_" + mapMode)}: ${t("lg_low")}</span>` + [1, 2, 3, 4, 5].map((q) => `<i style="background:var(--q${q})"></i>`).join("") + `<span>${t("lg_high")}</span>`;
     renderInspector();
     requestDraw();
@@ -2116,27 +2122,86 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   const atWar = (iso) => !!G.war.find((w) => w.foe === iso);
   const canThreat = (iso) => !isCamp() && !G.crisis && G.war.length < 2 && !atWar(iso) && (G.rel[iso] ?? 0) <= -40 && (G.truce[iso] ?? -1) <= G.q && G.q < G.Q - 2 && ((NEIGH[G.iso] || []).includes(iso) || G.s.mil >= 60);
   const termsOf = (w) => w.front >= 30 ? "win" : w.front <= -30 ? "lose" : "white";
+  // 전술: o=명령(공세/방어), m=전투력 가산, ok=장군 능력치 기반 성공률(win/fail 가산), v=편차, cas=사상자 배율, drain=적 지지도 감소
+  const TAC = {
+    assault: { o: "adv", m: 0.12, cas: 1.4 },
+    flank: { o: "adv", m: 0.08, v: 1.5 },
+    encircle: { o: "adv", m: 0, ok: (g) => 0.2 + 0.1 * g.atk, win: 0.3, fail: -0.15, cas: 1.2 },
+    depth: { o: "def", m: 0.18, cas: 0.8 },
+    attrit: { o: "def", m: 0.08, drain: 5, self: 3, cas: 0.9 },
+    counter: { o: "def", m: 0.04, ok: (g) => 0.15 + 0.1 * g.def, win: 0.25, fail: 0 },
+  };
+  const TRAITS = ["bold", "cautious", "logist", "veteran"];
+  const NO_OPCON = { KOR: true }; // 전시작전통제권이 연합사령부(미군 사령관)에 있는 나라 (2026년 10월 기준)
+  const hasOpcon = () => !NO_OPCON[G.iso] || !!G.flags.opcon;
+  function genOf(iso, boost = 0) {
+    const b = Math.round(milOf(iso) / 35), st = () => clamp(1 + b + ri(-1, 1) + boost, 1, 5);
+    return { n: randName(iso), atk: st(), def: st(), tr: pick(TRAITS) };
+  }
+  // AI 장군의 작전 선택: 전력비 p와 능력치로 명령과 전술을 고른다
+  const aiPlan = (g, p) => {
+    const adv = p >= 0.47 || g.atk > g.def + 1;
+    return [adv ? "adv" : "def", adv ? (g.atk >= 4 ? "encircle" : g.atk >= 3 ? "flank" : "assault") : (g.def >= 4 ? "depth" : p < 0.4 ? "attrit" : "counter")];
+  };
 
-  // 한 분기 전투. G에 의존하지 않아 simWar에서도 쓴다. me = { iso, mil, se, fis, reg }
+  // 한 분기 전투. G에 의존하지 않아 simWar에서도 쓴다. me = { iso, mil, se, fis, reg, ctl(전작권으로 플레이어가 작전 지휘) }
   function warStep(w, me) {
     const f = C[w.foe], fm = milOf(w.foe);
-    const pw = (m, se, fis, al) => m * (0.6 + 0.4 * se / 100) * (fis < 20 ? 0.75 : fis < 40 ? 0.9 : 1) + al.reduce((a, x) => a + milOf(x) * 0.3, 0);
-    const mp = pw(me.mil, me.se, me.fis, w.allies.concat(w.aid.slice(0, 1))), fp = pw(fm, f.se, 60, w.foeAllies);
-    const p = mp / (mp + fp);
+    const pw = (m, se, fis, al, g) => m * (0.6 + 0.4 * se / 100) * (g.tr === "logist" ? 1 : fis < 20 ? 0.75 : fis < 40 ? 0.9 : 1) + al.reduce((a, x) => a + milOf(x) * 0.3, 0);
+    const mp = pw(me.mil, me.se, me.fis, w.allies.concat(w.aid.slice(0, 1)), w.gen), fp = pw(fm, f.se, 60, w.foeAllies, w.foeGen);
+    const p0 = mp / (mp + fp);
+    if (!me.ctl || !w.tac) [w.ord, w.tac] = aiPlan(w.gen, p0);
+    [w.fo, w.ft] = aiPlan(w.foeGen, 1 - p0);
+    const side = (g, ord, tac) => {
+      const T = TAC[tac], st = ord === "adv" ? g.atk + (g.tr === "bold" ? 1 : 0) : g.def + (g.tr === "cautious" ? 1 : 0);
+      let m = 1 + st * 0.07 + T.m, ev = null;
+      if (T.ok) { ev = Math.random() < T.ok(g) ? "ok" : "fail"; m += ev === "ok" ? T.win : T.fail; }
+      return { m, ev };
+    };
+    const A = side(w.gen, w.ord, w.tac), B = side(w.foeGen, w.fo, w.ft);
+    w.ev = A.ev;
+    const p = mp * A.m / (mp * A.m + fp * B.m);
+    const iDef = w.ord === "def", fDef = w.fo === "def";
+    const vv = (TAC[w.tac].v || 1) * (w.gen.tr === "veteran" ? 0.7 : 1);
+    let dF = ((p - 0.5) * 130 + rand(-20, 20) * vv + (iDef ? 5 : 0) - (fDef ? 5 : 0)) * (iDef && fDef ? 0.35 : 1);
+    if (iDef && dF > 0 && A.ev !== "ok") dF *= 0.5;   // 방어 명령이면 전진은 반쯤만
+    if (fDef && dF < 0 && B.ev !== "ok") dF *= 0.5;
     const lo = C[me.iso]?.tags.includes("nuke") ? -60 : -100, hi = f.tags.includes("nuke") ? 60 : 100;
     const before = w.front;
-    w.front = Math.round(clamp(w.front + (p - 0.5) * 130 + rand(-20, 20) + (w.side === "def" ? 5 : -5), lo, hi));
+    w.front = Math.round(clamp(w.front + dF, lo, hi));
     w.dF = w.front - before;
-    w.casQ = Math.round((Math.abs(w.dF) * 0.12 + 1) * (me.mil + fm) / 40);
+    const casK = ((TAC[w.tac].cas || 1) + (TAC[w.ft].cas || 1)) / 2 * (iDef && fDef ? 0.5 : 1) * (w.gen.tr === "bold" ? 1.15 : 1);
+    w.casQ = Math.round((Math.abs(w.dF) * 0.12 + 1) * (me.mil + fm) / 40 * casK);
     w.cas += w.casQ;
     const drain = (rk) => (3 + w.casQ * 0.5 + Math.min(w.age, 6) * 1.5) * rk;
-    w.sup = Math.round(clamp(w.sup - drain(REGK[me.reg]) + w.front / 8 - (me.fis < 15 ? 5 : 0), -100, 100));
-    w.foeSup = Math.round(clamp(w.foeSup - drain(REGK[regime(f)]) - w.front / 8, -100, 100));
+    w.sup = Math.round(clamp(w.sup - drain(REGK[me.reg]) + w.front / 8 - (me.fis < 15 ? 5 : 0) - (TAC[w.ft].drain || 0) - (TAC[w.tac].self || 0) - (w.pM || 0) * 25, -100, 100));
+    w.foeSup = Math.round(clamp(w.foeSup - drain(REGK[regime(f)]) - w.front / 8 - (TAC[w.tac].drain || 0) - (TAC[w.ft].self || 0) - (w.pF || 0) * 25, -100, 100));
     w.age++;
     if (w.front >= 80 || w.foeSup <= 0) return "win";
     if (w.front <= -80 || w.sup <= 0) return "lose";
     if (Math.random() < clamp(0.04 + Math.abs(w.front) / 150 + (60 - Math.min(w.sup, w.foeSup)) / 110, 0.04, 0.9)) return termsOf(w);
     return null;
+  }
+  // 점령: 전선 값만큼 국경에 가까운 주부터 차지한다 (빅토리아식). pF/pM = 점령된 인구 비율
+  function occupy(w) {
+    if (!mapReady) return;
+    if (!w.ordF) {
+      const pv = (iso) => { const id = AT.isoToC[iso]?.id; return Object.values(AT.prov).filter((x) => x.c === id); };
+      const A = pv(G.iso), B = pv(w.foe);
+      const near = (X, Y) => X.map((a) => [a.id, a.pop || 0, Math.min(...Y.map((b) => Math.hypot((a.lon - b.lon) * Math.cos(a.lat * Math.PI / 180), a.lat - b.lat)))]).sort((a, b) => a[2] - b[2]).map((x) => [x[0], x[1]]);
+      w.ordF = near(B, A); w.ordM = near(A, B);
+    }
+    const take = (ord, v) => ord.slice(0, Math.round(Math.max(0, v) / 100 * 0.6 * ord.length));
+    const share = (ord, sub) => sub.reduce((a, x) => a + x[1], 0) / (ord.reduce((a, x) => a + x[1], 0) || 1);
+    const oF = take(w.ordF, w.front), oM = take(w.ordM, -w.front);
+    w.occF = oF.map((x) => x[0]); w.occM = oM.map((x) => x[0]);
+    w.pF = share(w.ordF, oF); w.pM = share(w.ordM, oM);
+  }
+  function setTac(foe, tac) {
+    const w = G.war.find((x) => x.foe === foe);
+    if (!w || !TAC[tac] || !hasOpcon() || G.phase === "over") return;
+    w.ord = TAC[tac].o; w.tac = tac;
+    render();
   }
   function startWar(foe, side, goal, age = 0) {
     const k = JOIN[goal] * (side === "def" ? 1.4 : 1);
@@ -2145,7 +2210,9 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const aid = others.filter((x) => !allies.includes(x) && (G.rel[x] ?? 0) >= 40 && (G.rel[x] ?? 0) < 60 && Math.random() < 0.3 * k).slice(0, 3);
     const pat = { R: "RUS", C: "CHN", W: "USA" }[C[foe].bloc];
     const foeAllies = pat && pat !== foe && pat !== G.iso && (G.rel[pat] ?? 0) < 20 && Math.random() < 0.4 ? [pat] : [];
-    G.war.push({ foe, side, goal, front: 0, sup: side === "def" ? 70 : 60, foeSup: 60, cas: 0, age, a0: age, allies, aid, foeAllies });
+    const gen = hasOpcon() ? genOf(G.iso) : { ...genOf("USA"), cfc: true }, foeGen = genOf(foe);
+    const [ord, tac] = aiPlan(gen, G.s.mil / (G.s.mil + milOf(foe)));
+    G.war.push({ foe, side, goal, front: 0, sup: side === "def" ? 70 : 60, foeSup: 60, cas: 0, age, a0: age, allies, aid, foeAllies, gen, foeGen, ord, tac });
     G.rel[foe] = -100;
     const F = cname(foe);
     addLog(t(age ? "w_ongoing" : side === "atk" ? "w_startAtk" : "w_startDef", { F }), "big");
@@ -2155,6 +2222,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     }
     if (allies.length || aid.length) addLog(t("w_allies", { a: allies.concat(aid).map(cname).join(", ") }));
     if (foeAllies.length) addLog(t("w_foeAllies", { a: cname(foeAllies[0]), F }));
+    addLog(t("w_gens", { g: gen.n, f: foeGen.n }));
     const nbs = [...new Set((NEIGH[G.iso] || []).concat(NEIGH[foe] || []))].filter((x) => C[x] && x !== G.iso && x !== foe);
     if (nbs.length) addLog(t("w_spill", { a: nbs.slice(0, 4).map(cname).join(", ") }), "news");
     if (C[foe].tags.includes("nuke")) G.queue.push({ id: "w_nuke", at: G.q + 1 });
@@ -2181,11 +2249,12 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const s = G.s, reg = regime(C[G.iso]);
     for (const w of G.war.slice()) {
       const first = w.age === 0;
-      const res = warStep(w, { iso: G.iso, mil: s.mil, se: s.se, fis: s.fis, reg });
-      applyFx({ ec: -ri(1, w.side === "def" ? 4 : 2), fis: -Math.round(3 + milOf(w.foe) / 20) + w.aid.length, se: Math.round(w.dF / 8), env: -1,
+      const res = warStep(w, { iso: G.iso, mil: s.mil, se: s.se, fis: s.fis, reg, ctl: hasOpcon() });
+      occupy(w);
+      applyFx({ ec: -ri(1, w.side === "def" ? 4 : 2) - Math.round((w.pM || 0) * 12), fis: -Math.round(3 + milOf(w.foe) / 20) + w.aid.length, se: Math.round(w.dF / 8), env: -1,
         ap: first ? ri(3, 8) + (w.side === "def" ? 2 : 0) : Math.round(4 * 0.5 ** w.age - w.cas / 40 - (w.front < -20 ? 2 : 0)) });
       if (res) endWar(w, res);
-      else addLog(t("w_q", { F: cname(w.foe), f: w.front, c: w.casQ }), "news");
+      else addLog(t("w_q", { F: cname(w.foe), f: w.front, p: t("tac_" + w.tac), a: (w.occF || []).length, b: (w.occM || []).length, c: w.casQ, e: w.ev ? t(`ev_${w.tac}_${w.ev}`) : "" }), "news");
     }
     // 적대국이 먼저 위기를 거는 경우 (방어전)
     if (G.crisis || G.war.length >= 2 || G.q < 1 || G.q >= G.Q - 2) return;
@@ -2201,6 +2270,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const out = { text: "", d: {} };
     const w = G.war.find((x) => x.foe === G.ctx.F) || G.war[0];
     if (c.wx && w) for (const [k, v] of Object.entries(c.wx)) w[k] = clamp(w[k] + v, -100, 100);
+    if (c.war === "gen" && w && hasOpcon()) { w.gen = genOf(G.iso, 1); out.text = t("w_newGen", { g: w.gen.n }); return out; }
     const cr = G.crisis;
     if (!c.war || !cr) return out;
     const [kind, arg] = c.war.split(":");
@@ -2227,6 +2297,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     else { const text = t("w_peaceNo", { F: cname(iso) }); w.foeSup = Math.min(100, w.foeSup + 3); G.acted.push({ text, d: {}, bad: true }); addLog(text); }
     if (!checkEnd()) { render(); updateMap(); }
   }
+  const gs = (g) => t("gs", { a: g.atk, d: g.def, tr: t("tr_" + g.tr) });
   function warView() {
     if (!G.war || (!G.war.length && !G.crisis)) return "";
     const cr = G.crisis ? `<div class="warn">${t("w_crisisNow", { F: esc(cname(G.crisis.foe)) })}</div>` : "";
@@ -2234,16 +2305,18 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       const bar = w.front >= 0 ? `left:50%;width:${w.front / 2}%;background:var(--good)` : `left:${50 + w.front / 2}%;width:${-w.front / 2}%;background:var(--bad)`;
       return `<div class="warcard"><div class="wc-head"><b>${flag(C[w.foe].iso2)} ${esc(cname(w.foe))}</b><span class="mono">${t("ws_" + w.side)} · ${t("w_qn", { n: w.age - (w.a0 || 0) + 1 })}</span></div>
         <div class="front" role="img" aria-label="${t("w_front")} ${w.front}"><span style="${bar}"></span></div>
+        <div class="wc-row"><span>${w.gen.cfc ? t("w_cfc") : t("w_gen")} <b>${esc(w.gen.n)}</b> ${gs(w.gen)}</span><span>${t("w_foeGen")} <b>${esc(w.foeGen.n)}</b> ${gs(w.foeGen)}</span></div>
+        <div class="wc-row"><span>${t("w_plan")} <b>${t("o_" + w.ord)} · ${t("tac_" + w.tac)}</b></span><span>${t("w_occ", { a: (w.occF || []).length, b: (w.occM || []).length })}</span></div>
         <div class="wc-row"><span>${t("w_front")} <b class="mono">${w.front > 0 ? "+" : ""}${w.front}</b></span><span>${t("w_sup")} <b class="mono">${w.sup}</b></span><span>${t("w_foeSup")} <b class="mono">${w.foeSup}</b></span><span>${t("w_cas")} <b class="mono">${w.cas}k</b></span></div></div>`;
     }).join("");
   }
-  // 개발용: 콘솔에서 simWar("KOR", "PRK", 2000) — #demo 해시일 때만 노출
-  function simWar(a, b, n = 1000) {
+  // 개발용: 콘솔에서 simWar("KOR", "PRK", 2000[, "encircle"]) — 전술을 주면 그 전술로 고정. #demo 해시일 때만 노출
+  function simWar(a, b, n = 1000, tac) {
     const out = { win: 0, lose: 0, white: 0 }, qs = [];
     for (let i = 0; i < n; i++) {
-      const w = { foe: b, side: "atk", front: 0, sup: 60, foeSup: 60, cas: 0, age: 0, allies: [], aid: [], foeAllies: [] };
+      const w = { foe: b, side: "atk", front: 0, sup: 60, foeSup: 60, cas: 0, age: 0, allies: [], aid: [], foeAllies: [], gen: genOf(a), foeGen: genOf(b), ord: TAC[tac]?.o, tac };
       let r = null;
-      while (!r && w.age < 40) r = warStep(w, { iso: a, mil: milOf(a), se: C[a].se, fis: 60, reg: regime(C[a]) });
+      while (!r && w.age < 40) r = warStep(w, { iso: a, mil: milOf(a), se: C[a].se, fis: 60, reg: regime(C[a]), ctl: !!tac });
       out[r || "white"]++; qs.push(w.age);
     }
     qs.sort((x, y) => x - y);
@@ -2254,11 +2327,11 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   if (DEMO) window.simWar = simWar;
 
   Object.assign(STR.ko, {
-    mil: "군사력", m_war: "전쟁", lg_foe: "교전국", lg_foeAlly: "적 지원국", lg_wally: "참전 동맹", lg_aid: "원조국",
+    mil: "군사력", m_war: "전쟁", lg_occ: "점령지(빗금)", lg_foe: "교전국", lg_foeAlly: "적 지원국", lg_wally: "참전 동맹", lg_aid: "원조국",
     d_threat: "군사 위협", threatLog: "{c}에 군사적 경고를 보냈다. 국경에 긴장이 감돈다.",
     w_startAtk: "{F}과(와)의 전쟁이 시작됐다. 우리 군이 먼저 움직였다.", w_startDef: "{F}이(가) 공격해 왔다. 전쟁이 시작됐다.", w_ongoing: "{F}과(와)의 전쟁이 계속되고 있다.",
     w_allies: "{a}이(가) 우리 편에서 참전하거나 물자를 보내기로 했다.", w_foeAllies: "{a}이(가) {F}을(를) 지원하고 나섰다.", w_spill: "교전 여파로 주변국({a}) 경제도 흔들리고 있다.",
-    w_sanc: "선제 공격을 이유로 여러 나라가 경제 제재에 나섰다.", w_q: "{F} 전선 {f} · 이번 분기 사상자 {c}천 명.",
+    w_sanc: "선제 공격을 이유로 여러 나라가 경제 제재에 나섰다.", w_q: "{F} 전선 {f} · {p} · 점령 {a}주/피점령 {b}주 · 사상자 {c}천 명. {e}",
     w_end_win: "{F}과(와)의 전쟁이 {n}분기 만에 우리 쪽에 유리하게 끝났다. 누적 사상자 {c}천 명.", w_end_white: "{F}과(와) {n}분기 만에 현상 유지로 휴전했다. 누적 사상자 {c}천 명.", w_end_lose: "{F}과(와)의 전쟁에서 {n}분기 만에 양보하고 물러났다. 누적 사상자 {c}천 명.",
     w_conceded: "{F}이(가) 요구를 받아들이고 물러섰다.", w_mediating: "제3국이 중재에 나서기로 했다.", w_countered: "{F}이(가) 요구를 거부하고 맞대응에 나섰다.", w_foeBacked: "{F}이(가) 한발 물러서며 위기가 가라앉았다.",
     w_crisisFoe: "{F}이(가) 국경에 병력을 집결시키고 있다. 외교 위기가 시작됐다.", w_crisisNow: "외교 위기 진행 중: {F}",
@@ -2268,13 +2341,25 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     sc_war: "전쟁: {F} {r}", wr_win: "승리", wr_white: "휴전", wr_lose: "패전", w_hist: "전쟁 기록", w_histRow: "{F}({s}) {r}, {n}분기",
     realWar: "진행 중인 분쟁 상태로 시작", realWar_d: "실제로 이어지고 있는 분쟁을 첫 분기부터 전쟁 상태로 둡니다",
     cr_warGraft: "전시 방산 비리",
+    w_gen: "아군 지휘", w_foeGen: "적 지휘", w_cfc: "연합사령관", gs: "공{a}·방{d}·{tr}", w_gens: "아군 지휘관 {g}, 적 지휘관 {f}.", w_newGen: "새 전선 사령관 {g}이(가) 부임했다.",
+    tr_bold: "과감", tr_cautious: "신중", tr_logist: "병참통", tr_veteran: "백전노장",
+    o_adv: "공세", o_def: "방어", w_plan: "작전", w_occ: "점령 {a}주 · 피점령 {b}주",
+    tac_assault: "정면 돌파", tac_assault_d: "병력으로 밀어붙인다. 사상자가 많다",
+    tac_flank: "측면 기동", tac_flank_d: "결과 편차가 크다. 공격력 높은 장군에게 유리",
+    tac_encircle: "포위 섬멸", tac_encircle_d: "성공하면 큰 전과, 실패하면 역습당한다. 성공률은 공격력에 비례",
+    tac_depth: "종심 방어", tac_depth_d: "단단히 버틴다. 사상자가 적다",
+    tac_attrit: "소모전", tac_attrit_d: "적의 전쟁 지지도를 크게 깎지만 우리도 지친다",
+    tac_counter: "방어 후 역습", tac_counter_d: "막아낸 뒤 반격한다. 성공률은 방어력에 비례",
+    ev_encircle_ok: "포위에 성공했다.", ev_encircle_fail: "포위가 뚫려 역습을 당했다.", ev_counter_ok: "역습이 먹혔다.", ev_counter_fail: "",
+    w_tacHead: "{F} 전선 작전 지시 (일정 소모 없음)", w_noOpcon: "전시작전통제권이 연합사령부에 있어 세부 작전은 연합사령관이 정합니다. 강화 제안은 할 수 있습니다.",
+    opcon: "전시작전통제권", opcon_y: "우리 군 보유", opcon_n: "한미연합사령관(미군)",
   });
   Object.assign(STR.en, {
-    mil: "Military", m_war: "War", lg_foe: "Enemy", lg_foeAlly: "Enemy backer", lg_wally: "Allied fighter", lg_aid: "Aid donor",
+    mil: "Military", m_war: "War", lg_occ: "Occupied (hatched)", lg_foe: "Enemy", lg_foeAlly: "Enemy backer", lg_wally: "Allied fighter", lg_aid: "Aid donor",
     d_threat: "Threaten", threatLog: "Issued a military warning to {c}. Tension is rising on the border.",
     w_startAtk: "War with {F} has begun. Our forces moved first.", w_startDef: "{F} attacked. War has begun.", w_ongoing: "The war with {F} continues.",
     w_allies: "{a} will fight on our side or send supplies.", w_foeAllies: "{a} is backing {F}.", w_spill: "The fighting is shaking neighboring economies ({a}).",
-    w_sanc: "Several countries imposed sanctions over the first strike.", w_q: "{F} front {f} · {c}k casualties this quarter.",
+    w_sanc: "Several countries imposed sanctions over the first strike.", w_q: "{F} front {f} · {p} · holding {a} provinces, lost {b} · {c}k casualties. {e}",
     w_end_win: "The war with {F} ended in our favor after {n} quarters. {c}k casualties in total.", w_end_white: "Ceasefire with {F} on the prewar lines after {n} quarters. {c}k casualties in total.", w_end_lose: "We gave ground to {F} and pulled out after {n} quarters. {c}k casualties in total.",
     w_conceded: "{F} accepted the demands and backed down.", w_mediating: "A third country agreed to mediate.", w_countered: "{F} rejected the demands and escalated.", w_foeBacked: "{F} stepped back and the crisis eased.",
     w_crisisFoe: "{F} is massing troops on the border. A diplomatic crisis has begun.", w_crisisNow: "Diplomatic crisis under way: {F}",
@@ -2284,6 +2369,18 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     sc_war: "War: {F} {r}", wr_win: "won", wr_white: "ceasefire", wr_lose: "lost", w_hist: "War record", w_histRow: "{F} ({s}) {r}, {n} quarters",
     realWar: "Start in the ongoing conflict", realWar_d: "Puts a real conflict that is still under way at war from the first quarter",
     cr_warGraft: "wartime arms graft",
+    w_gen: "Our commander", w_foeGen: "Enemy commander", w_cfc: "Combined commander", gs: "Atk {a}·Def {d}·{tr}", w_gens: "Our commander is {g}; the enemy's is {f}.", w_newGen: "{g} took over as front commander.",
+    tr_bold: "Bold", tr_cautious: "Cautious", tr_logist: "Logistician", tr_veteran: "Veteran",
+    o_adv: "Advance", o_def: "Defend", w_plan: "Plan", w_occ: "Holding {a} · lost {b} provinces",
+    tac_assault: "Frontal assault", tac_assault_d: "Push through with numbers. Heavy casualties",
+    tac_flank: "Flanking", tac_flank_d: "Swingy results. Suits a high-attack commander",
+    tac_encircle: "Encirclement", tac_encircle_d: "Big gains if it works, a counterblow if not. Odds rise with attack",
+    tac_depth: "Defense in depth", tac_depth_d: "Hold firm. Light casualties",
+    tac_attrit: "Attrition", tac_attrit_d: "Wears down enemy war support, and ours a little",
+    tac_counter: "Counterattack", tac_counter_d: "Absorb, then strike back. Odds rise with defense",
+    ev_encircle_ok: "The encirclement worked.", ev_encircle_fail: "The encirclement broke and we were hit back.", ev_counter_ok: "The counterattack landed.", ev_counter_fail: "",
+    w_tacHead: "Orders for the {F} front (free)", w_noOpcon: "Wartime operational control sits with the Combined Forces Command, so its commander sets the tactics. You can still offer peace.",
+    opcon: "Wartime OPCON", opcon_y: "Our own forces", opcon_n: "Combined Forces Command (US)",
   });
 
   // 전쟁 사건: {F}=전쟁·위기 상대. war=위기 진행 코드, wx=전쟁 수치(front/sup/foeSup) 변화
@@ -2358,11 +2455,23 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         { t: "전쟁세 신설", fx: { fis: 6, ap: -4 }, wx: { sup: -2 }, log: "한시 전쟁세를 신설했다." },
         { t: "우방에 차관 요청", fx: { fis: 6 }, r: { al: 3 }, log: "{AL}에 긴급 차관을 요청했다." },
       ] },
-    { id: "w_cmd", cond: atWarCond, w: 2, dept: "합동참모본부", title: "군 지휘부를 바꿀까요?",
+    { id: "w_cmd", cond: (g) => atWarCond(g) && hasOpcon(), w: 2, dept: "합동참모본부", title: "군 지휘부를 바꿀까요?",
       body: "{F} 전선의 작전이 지지부진하다는 평가가 나옵니다. 젊은 지휘관을 발탁하자는 의견과 지휘 안정이 우선이라는 의견이 맞섭니다.",
       choices: [
-        { t: "젊은 지휘관을 발탁", wx: { front: 6 }, risk: { p: 0.35, fx: { se: -4, ap: -3 }, log: "새 지휘부의 첫 작전이 실패했다." }, log: "전선 지휘부를 전면 교체했다." },
+        { t: "젊은 지휘관을 발탁", s: "공격력 높은 새 사령관", war: "gen", risk: { p: 0.35, fx: { se: -4, ap: -3 }, log: "새 지휘부의 첫 작전이 실패했다." }, log: "전선 지휘부를 전면 교체했다." },
         { t: "현 지휘부 유임", fx: { as: 2 }, log: "지휘 안정을 이유로 현 지휘부를 유임했다." },
+      ] },
+    { id: "w_cfcplan", cond: (g) => atWarCond(g) && !hasOpcon(), w: 3, repeat: true, dept: "합동참모본부", title: "연합사령부와 작전 구상이 엇갈립니다",
+      body: "연합사령관은 {F} 전선에서 신중한 작전을 고집합니다. 우리 군 지휘부는 더 적극적인 작전을 원합니다. 전작권이 없어 최종 결정은 연합사령관이 합니다.",
+      choices: [
+        { t: "연합사 구상을 따른다", fx: { as: 1 }, r: { USA: 3 }, log: "연합사령부의 작전 구상을 존중하기로 했다." },
+        { t: "정상 간 통화로 작전 수정을 요구", s: "동맹 관계 부담", fx: { ap: 3 }, r: { USA: -6 }, wx: { front: 4 }, risk: { p: 0.4, fx: { ap: -3 }, log: "동맹 균열 보도가 나왔다." }, log: "작전 수정을 강하게 요구했다." },
+      ] },
+    { id: "w_opcon", only: "KOR", cond: (g) => !hasOpcon() && g.q >= 2 && !atWarCond(g), dept: "국방부", title: "전시작전통제권 전환 시기를 정해야 합니다",
+      body: "전시에 우리 군을 지휘할 권한은 아직 한미연합사령관(미군 대장)에게 있습니다. 전환하면 전쟁 때 {T}이(가) 세부 작전을 직접 정할 수 있지만, 검증과 전력 보강에 시간과 예산이 듭니다.",
+      choices: [
+        { t: "임기 안에 전환한다", s: "전시 작전을 직접 지휘", fx: { fis: -6, se: -2, ap: 3 }, r: { USA: -4 }, flag: "opcon", log: "전시작전통제권 전환에 합의했다. 연합 방위 체계를 새로 짠다." },
+        { t: "조건이 갖춰질 때까지 미룬다", fx: { se: 2, ap: -2 }, r: { USA: 4 }, log: "전작권 전환을 조건 충족 이후로 미뤘다." },
       ] },
     { id: "w_graft", cond: atWarCond, w: 2, dept: "비서실", title: "군수업체가 '사례'를 약속합니다",
       body: "급한 무기 조달을 틈타 한 군수업체가 단가를 부풀린 계약을 제안했습니다. 성사되면 감사 표시를 하겠다고 합니다.",
@@ -3227,7 +3336,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
       ${warView()}
       ${["ec", "we", "se", "mil", "as", "env", "fis", "fat"].map(row).join("")}
       ${corruptRows()}
-      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span></div>
+      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span>${NO_OPCON[G.iso] ? `<span>${t("opcon")}: <b>${t(hasOpcon() ? "opcon_y" : "opcon_n")}</b></span>` : ""}</div>
       ${w.length ? `<div class="warns">${w.map((x) => `<div class="warn">${x}</div>`).join("")}</div>` : ""}
     </aside>`;
   }
@@ -3278,6 +3387,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
       <div class="agenda-head"><h3>${t(camp ? "agendaCamp" : "agenda")}</h3><span class="pc">${t("left")} ${dots}</span></div>
       ${on ? "" : `<p class="hint">${t("decideFirst")}</p>`}
       <div class="acts">${list.map((a) => `<button class="act" data-act="${a}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${label(a)}</b><span>${desc(a)}</span></button>`).join("")}</div>
+      ${!camp && G.war.length ? G.war.map((w) => `<div class="dirty-head"><span class="label">${t("w_tacHead", { F: esc(cname(w.foe)) })}</span></div>${hasOpcon() ? `<div class="acts">${Object.keys(TAC).map((k) => `<button class="act" data-tac="${w.foe}:${k}" aria-pressed="${w.tac === k}"><b>${t("o_" + TAC[k].o)} · ${t("tac_" + k)}</b><span>${t("tac_" + k + "_d")}</span></button>`).join("")}</div>` : `<p class="hint">${t("w_noOpcon")}</p>`}`).join("") : ""}
       ${!camp && G.war.length ? `<div class="dirty-head"><span class="label">${t("w_acts")}</span></div><div class="acts">${G.war.map((w) => `<button class="act" data-peace="${w.foe}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${t("w_peace", { F: esc(cname(w.foe)) })}</b><span>${t("w_terms_" + termsOf(w))}</span></button>`).join("")}</div>` : ""}
       <div class="dirty-head"><span class="label">${t("dirty")}</span><span class="hint" style="font-size:12px">${t("dirtyNote")}</span></div>
       <div class="acts dirty">${dl.map((a) => `<button class="act" data-dirty="${a}" ${!on || G.pc <= 0 ? "disabled" : ""}><b>${esc(dname(a))}</b><span>${t(`x_${a}_d`)}</span></button>`).join("")}</div>
@@ -3364,6 +3474,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     else if (b.dataset.dirty) dirty(b.dataset.dirty);
     else if (b.dataset.dip) dip(b.dataset.dip);
     else if (b.dataset.peace) peace(b.dataset.peace);
+    else if (b.dataset.tac) setTac(...b.dataset.tac.split(":"));
     else if (b.dataset.mode) { mapMode = b.dataset.mode; updateMap(); }
     else if (b.dataset.zoom) zoomBy(+b.dataset.zoom);
     else if (b.hasAttribute("data-close")) { selIso = null; updateMap(); }
@@ -3399,7 +3510,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
   // ───────── 시작 ─────────
   function boot(data) {
     if (data && data.G) { G = data.G; if (data.draft) Object.assign(draft, data.draft); }
-    if (G) { G.war ??= []; G.wars ??= []; G.truce ??= {}; G.crisis ??= null; G.s.mil ??= milOf(G.iso); }
+    if (G) { G.war ??= []; G.wars ??= []; G.truce ??= {}; G.crisis ??= null; G.s.mil ??= milOf(G.iso); for (const w of G.war) { w.gen ??= genOf(G.iso); w.foeGen ??= genOf(w.foe); } }
     document.documentElement.lang = LANG;
     initMap();
     renderAll();
