@@ -894,14 +894,14 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         { t: "국부펀드에 적립", fx: { fis: 10 }, log: "초과 수입을 국부펀드에 쌓았다." },
         { t: "연료 보조금과 복지 확대", fx: { fis: 4, we: 5, ap: 5, env: -2 }, log: "연료 보조금과 복지를 늘렸다." },
       ] },
-    { id: "storm", cond: (g) => has(g, "storm"), w: 2, repeat: true, dept: "재난 당국", title: "초강력 태풍이 상륙했습니다",
+    { id: "storm", chainOnly: true, cond: (g) => has(g, "storm"), w: 2, repeat: true, dept: "재난 당국", title: "초강력 태풍이 상륙했습니다",
       body: "최대 풍속 초속 60m의 태풍이 해안을 덮쳤습니다. 수십만 명이 대피했고 전력망 일부가 끊겼습니다.",
       choices: [
         { t: "특별재난지역 선포, 예비비 투입", fx: { fis: -6, we: 4, ap: 4 }, log: "특별재난지역을 선포하고 예비비를 풀었다." },
         { t: "현장을 직접 방문", fx: { ap: 2, fat: 8 }, risk: { p: 0.35, fx: { ap: -6 }, log: "웃으며 찍힌 사진이 퍼져 '보여주기 행정' 논란이 일었다." }, log: "피해 현장을 찾아 이재민을 만났다." },
         { t: "{AL}에 지원 요청", fx: { we: 2, fis: -2 }, r: { al: 4 }, log: "{AL}의 구호 지원을 받았다." },
       ] },
-    { id: "quake", cond: (g) => has(g, "quake"), w: 2, dept: "재난 당국", title: "규모 7.1 지진이 발생했습니다",
+    { id: "quake", chainOnly: true, cond: (g) => has(g, "quake"), w: 2, dept: "재난 당국", title: "규모 7.1 지진이 발생했습니다",
       body: "인구 밀집 지역 근처에서 강진이 일어났습니다. 오래된 건물 수백 채가 무너졌고 구조 작업이 진행 중입니다.",
       choices: [
         { t: "군을 투입해 구조에 총력", fx: { fis: -6, we: 3, ap: 5, fat: 10 }, log: "군 병력을 투입해 72시간 구조 작전을 벌였다." },
@@ -911,7 +911,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     { id: "quake2", chainOnly: true, dept: "재난 당국", title: "또 지진이 났지만 피해가 적었습니다",
       body: "규모 6.4 여진이 왔지만 강화된 내진 규정 덕분에 무너진 건물이 거의 없었습니다.",
       choices: [{ t: "규정의 효과를 알린다", fx: { ap: 5, we: 3 }, log: "강화된 내진 규정이 인명을 지켰다." }] },
-    { id: "flood", cond: (g) => has(g, "flood"), w: 2, dept: "재난 당국", title: "기록적인 폭우로 강이 범람했습니다",
+    { id: "flood", chainOnly: true, cond: (g) => has(g, "flood"), w: 2, dept: "재난 당국", title: "기록적인 폭우로 강이 범람했습니다",
       body: "닷새 동안 1년 강수량의 절반이 쏟아졌습니다. 농경지가 잠기고 이재민이 수십만 명입니다.",
       choices: [
         { t: "긴급 구호와 농가 보상", fx: { fis: -6, we: 3, ap: 3 }, log: "긴급 구호와 농가 피해 보상을 시작했다." },
@@ -1355,6 +1355,19 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   Object.assign(STR.ko, { m_pol: "정치", lg_pol: "국가별 색 · 금색 테두리가 우리나라", attrib: "지도: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0)", province: "주", population: "인구", mapLoading: "지도를 불러오는 중…", mapFail: "지도 자료를 불러오지 못했습니다. 게임은 지도 없이 진행됩니다." });
   Object.assign(STR.en, { m_pol: "Political", lg_pol: "Country colours · gold edge is you", attrib: "Map: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0)", province: "Province", population: "Population", mapLoading: "Loading the map…", mapFail: "Could not load the map data. The game continues without the map." });
   const MAPNAMES = {};
+  // 남북한 주·도시 한국어 공식 명칭 (2026년 11월 기준). 광주·전남은 2026년 7월 1일 전남광주통합특별시로 통합
+  const PROV_KO = {
+    KOR: { Seoul: "서울특별시", Busan: "부산광역시", Daegu: "대구광역시", Incheon: "인천광역시", Gwangju: "전남광주통합특별시", Daejeon: "대전광역시", Ulsan: "울산광역시", Sejong: "세종특별자치시",
+      Gyeonggi: "경기도", Gangwon: "강원특별자치도", "North Chungcheong": "충청북도", "South Chungcheong": "충청남도", "North Jeolla": "전북특별자치도", "South Jeolla": "전남광주통합특별시",
+      "North Gyeongsang": "경상북도", "South Gyeongsang": "경상남도", Jeju: "제주특별자치도" },
+    PRK: { Pyongyang: "평양직할시", Rason: "라선특별시", "South Pyongan": "평안남도", "North Pyongan": "평안북도", Chagang: "자강도", Ryanggang: "량강도",
+      "South Hamgyong": "함경남도", "North Hamgyong": "함경북도", Kangwon: "강원도", "South Hwanghae": "황해남도", "North Hwanghae": "황해북도" },
+  };
+  const PROV_MERGE = [["KOR", "Gwangju", "South Jeolla"]]; // [국가, 흡수되는 주, 남는 주]
+  const CITY_KO = { Seoul: "서울", Busan: "부산", Incheon: "인천", Daegu: "대구", Daejeon: "대전", Gwangju: "광주", Ulsan: "울산", Suwon: "수원", Changwon: "창원", Pyongyang: "평양", Nampho: "남포" };
+  const provName = (p) => (p && LANG === "ko" && PROV_KO[AT.idToIso[p.c]]?.[p.n]) || (p ? p.n : "");
+  const cityName = (n, cid) => (LANG === "ko" && CITY_KO[n] && PROV_KO[AT.idToIso[cid]]) ? CITY_KO[n] : n;
+  const cityVP = (tier, cap) => cap ? (tier === 1 ? 50 : 20) : tier === 1 ? 30 : tier === 2 ? 10 : 5; // HOI식 승점
   let NEIGH = {};
   let mapReady = false, mapMode = "pol", selIso = null, selProv = 0;
   const A3FIX = { SDS: "SSD", PSX: "PSE", SAH: "ESH" };
@@ -1462,6 +1475,16 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const n = pw * ph;
     const pid = new Uint16Array(n), cty = new Uint8Array(n), edge = new Uint8Array(n);
     for (let i = 0, j = 0; i < n; i++, j += 4) { pid[i] = (d[j] << 8) | d[j + 1]; cty[i] = d[j + 2]; }
+    for (const [iso, from, to] of PROV_MERGE) {
+      const cid = AT.isoToC[iso]?.id, ps = Object.values(AT.prov).filter((x) => x.c === cid);
+      const a = ps.find((x) => x.n === from), b = ps.find((x) => x.n === to);
+      if (!a || !b) continue;
+      for (let i = 0; i < n; i++) if (pid[i] === a.id) pid[i] = b.id;
+      b.pop = (b.pop || 0) + (a.pop || 0); delete AT.prov[a.id];
+    }
+    AT.cityPid = AT.cities.map(([lon, lat]) => pid[Math.floor((80 - lat) / 140 * ph) * pw + Math.floor((lon + 180) / 360 * pw)] || 0);
+    const cityProv = new Set(AT.cities.map((c, k) => AT.prov[AT.cityPid[k]]?.n === c[4] ? AT.cityPid[k] : 0));
+    AT.provSorted = Object.values(AT.prov).filter((x) => x.n && !cityProv.has(x.id)).sort((a, b) => (b.pop || 0) - (a.pop || 0));
     for (let y = 0; y < ph; y++) {
       const row = y * pw;
       for (let x = 0; x < pw; x++) {
@@ -1549,7 +1572,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       } else if (hasOcc && occ[pid[i]] && ((i % pw) + ((i / pw) | 0)) % 8 < 4) {
         const col = occ[pid[i]] === 1 ? gold : hostile; out[j] = col[0]; out[j + 1] = col[1]; out[j + 2] = col[2]; out[j + 3] = 235;
       } else if (e === 1) {
-        out[j] = lut[k] * 0.78; out[j + 1] = lut[k + 1] * 0.78; out[j + 2] = lut[k + 2] * 0.78; out[j + 3] = Math.min(255, lut[k + 3] + 40);
+        out[j] = lut[k] * 0.66; out[j + 1] = lut[k + 1] * 0.66; out[j + 2] = lut[k + 2] * 0.66; out[j + 3] = Math.min(255, lut[k + 3] + 60);
       } else { out[j] = lut[k]; out[j + 1] = lut[k + 1]; out[j + 2] = lut[k + 2]; out[j + 3] = lut[k + 3]; }
     }
     AT.polCtx.putImageData(AT.polImg, 0, 0);
@@ -1628,42 +1651,65 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
         if (curvedText(name, pts, size, size * (latin ? 0.32 : 0.45), fill, halo)) break;
       }
     }
-    // 주 이름 (많이 확대했을 때만)
-    if (z >= 9) {
-      ctx.font = `italic ${Math.round(clamp(P * 0.32, 10, 14))}px "IM Fell English", "Gowun Batang", serif`;
+    // 도시 (HOI식 거점): 확대할수록 작은 도시까지, 승점 상자와 점령 시 점령국 색
+    const occC = new Map();
+    for (const w of (G && G.war) || []) { for (const id of w.occF || []) occC.set(id, 1); for (const id of w.occM || []) occC.set(id, 2); }
+    const rgb = (a) => `rgb(${a[0]},${a[1]},${a[2]})`, cMe = rgb(tok("--me")), cFoe = rgb(tok("--r-hostile"));
+    const drawCities = (major) => {
+      for (let k = 0; k < AT.cities.length; k++) {
+        const [lon, lat, tier, cap, name0, cid] = AT.cities[k];
+        const minZ = cap ? 1.5 : tier === 1 ? 2.2 : tier === 2 ? 3.5 : 5;
+        if (z < minZ) continue;
+        const [x, y] = toScreen(lon, lat);
+        if (x < -30 || y < -20 || x > MW + 30 || y > MH + 20) continue;
+        const name = name0 ? cityName(name0, cid) : "", vp = cityVP(tier, cap);
+        if ((vp >= 20) !== major) continue;
+        const showName = name && z >= minZ + 0.5, showVP = z >= 3;
+        ctx.font = `${cap || tier === 1 ? "700 " : ""}${cap ? 14 : 12}px "IM Fell English", "Gowun Batang", serif`;
+        const tw = showName ? ctx.measureText(name).width : 0;
+        const vs = String(vp), vw = showVP ? vs.length * 6 + 6 : 0;
+        const room = free(x + 6, y - 14, tw + vw + 8, 16);
+        const oc = occC.get(AT.cityPid[k]);
+        ctx.fillStyle = oc === 1 ? cMe : oc === 2 ? cFoe : ink; ctx.strokeStyle = halo; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (cap) { for (let i = 0; i < 10; i++) { const r = i % 2 ? 2.6 : 6, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); } ctx.closePath(); }
+        else { const h = tier === 1 ? 3.5 : 2.5; ctx.rect(x - h, y - h, h * 2, h * 2); }
+        ctx.fill(); ctx.stroke();
+        let tx = x + 8;
+        if (showName && room) {
+          ctx.textAlign = "left"; ctx.lineWidth = 3; ctx.strokeText(name, tx, y - 6); ctx.fillStyle = ink; ctx.fillText(name, tx, y - 6);
+          tx += tw + 4;
+        }
+        if (showVP && room) {
+          ctx.fillStyle = oc === 1 ? cMe : oc === 2 ? cFoe : dark ? "rgba(236,232,220,.85)" : "rgba(52,40,28,.85)";
+          ctx.fillRect(tx, y - 13, vw, 13);
+          ctx.font = `600 10px "IBM Plex Mono", monospace`; ctx.textAlign = "center";
+          ctx.fillStyle = dark ? "#0e1418" : "#f4efe2"; ctx.fillText(vs, tx + vw / 2, y - 6);
+        }
+        ctx.textAlign = "center";
+      }
+    };
+    drawCities(true);
+    // 주 이름: 인구 많은 주부터, 같은 이름(통합된 주)은 한 번만
+    if (z >= 4.5) {
+      ctx.font = `italic ${Math.round(clamp(P * 0.3, 10, 14))}px "IM Fell English", "Gowun Batang", serif`;
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       let drawn = 0;
-      for (const id in AT.prov) {
-        const p = AT.prov[id];
-        if (!p.n) continue;
+      const seen = new Set();
+      for (const p of AT.provSorted) {
         const [x, y] = toScreen(p.lon, p.lat);
         if (x < -40 || y < -20 || x > MW + 40 || y > MH + 20) continue;
-        const tw = ctx.measureText(p.n).width;
+        const nm = provName(p);
+        if (seen.has(nm)) continue;
+        const tw = ctx.measureText(nm).width;
         if (!free(x - tw / 2, y - 7, tw, 14)) continue;
-        ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(p.n, x, y);
-        ctx.fillStyle = dark ? "rgba(220,214,200,.7)" : "rgba(70,58,44,.7)"; ctx.fillText(p.n, x, y);
+        seen.add(nm);
+        ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(nm, x, y);
+        ctx.fillStyle = dark ? "rgba(220,214,200,.75)" : "rgba(70,58,44,.75)"; ctx.fillText(nm, x, y);
         if (++drawn > 260) break;
       }
     }
-    // 도시
-    if (z >= 1.8) {
-      for (const [lon, lat, tier, cap, name, cid] of AT.cities) {
-        if (!(cap || (tier === 1 && z >= 5) || (tier === 2 && z >= 8))) continue;
-        const [x, y] = toScreen(lon, lat);
-        if (x < -30 || y < -20 || x > MW + 30 || y > MH + 20) continue;
-        ctx.font = `${cap ? "" : "italic "}${cap ? 14 : 12}px "IM Fell English", "Gowun Batang", serif`;
-        const showName = name && (cap ? z >= 2.4 : true);
-        const tw = showName ? ctx.measureText(name).width : 0;
-        if (!free(x - 6, y - 14, tw + 14, 20)) continue;
-        ctx.fillStyle = ink;
-        if (cap) { ctx.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 2.4 : 5.6, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); } ctx.closePath(); ctx.fill(); }
-        else { ctx.beginPath(); ctx.arc(x, y, tier === 1 ? 3 : 2.2, 0, Math.PI * 2); ctx.fill(); }
-        if (showName) {
-          ctx.textAlign = "left"; ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(name, x + 7, y - 6); ctx.fillStyle = ink; ctx.fillText(name, x + 7, y - 6);
-          ctx.textAlign = "center";
-        }
-      }
-    }
+    drawCities(false);
   }
 
   // 조작
@@ -1768,7 +1814,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const h = hitAt(x, y);
     if (!h) { tip.hidden = true; return; }
     const p = AT.prov[h.prov];
-    let txt = cname(h.iso) + (p && p.n ? " · " + p.n : "");
+    let txt = cname(h.iso) + (p && p.n ? " · " + provName(p) : "");
     if (C[h.iso]) {
       if (mapMode === "rel") { const me = G ? G.iso : draft.iso; if (h.iso !== me) txt += " · " + t("lg_rel", { v: G ? (G.rel[h.iso] ?? 0) : rel0(me, h.iso) }); }
       else if (mapMode === "war") txt += ` · ${t("mil")} ${h.iso === (G ? G.iso : draft.iso) && G ? G.s.mil : milOf(h.iso)}`;
@@ -1796,7 +1842,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     el.hidden = false;
     el.innerHTML = `<h3><span>${flag(c.iso2)} ${esc(cname(selIso))}</span><button data-close aria-label="×">×</button></h3>
       <div class="sys" style="font-size:12px;color:var(--muted)">${t("sys_" + c.gov)} · ${t("reg_" + regime(c))} · ${t("bloc_" + c.bloc)} · ${t("mil")} <b>${me ? G.s.mil : milOf(selIso)}</b></div>
-      ${p && p.n ? `<div class="relbar"><span>${t("province")}: <b>${esc(p.n)}</b></span><span class="mono">${t("population")} ${fmtPop(p.pop)}</span></div>` : ""}
+      ${p && p.n ? `<div class="relbar"><span>${t("province")}: <b>${esc(provName(p))}</b></span><span class="mono">${t("population")} ${fmtPop(p.pop)}</span></div>` : ""}
       <div class="insp-grid">${["ec", "we", "se", "fr", "env"].map((k) => `<div>${t(k)}<b>${statOf(selIso, k)}</b></div>`).join("")}<div>${t("debt")}<b>${c.debt}%</b></div></div>
       ${me ? `<div class="relbar"><b>${t("you")}</b></div>` : `<div class="relbar"><span>${t("relation")}</span><b class="mono">${r > 0 ? "+" : ""}${r} · ${t("lg_" + relClass(r))}</b></div>
       <div class="dip">${["summit", "trade", "aid", "sanction", "threat"].map((d) => `<button data-dip="${d}" ${can && (d !== "threat" || canThreat(selIso)) ? "" : "disabled"}>${t("d_" + d)}</button>`).join("")}</div>
@@ -1821,7 +1867,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     pending.add(key);
     const langName = LANGS.find((l) => l[0] === LANG)?.[1] || LANG;
     try {
-      const out = await SAMPLE.json(`Translate the Korean strings in this JSON object into ${langName} (${LANG}) for a political strategy game. Keep the same keys and structure, keep placeholders like {N} {T} {L} {NB} {RV} {AL} {F} exactly as they are, keep empty strings empty. Natural, concise news-briefing tone. Reply with only the JSON object.\n\n${JSON.stringify(evPayload(ev))}`, { modelTier: "quick", cache: { gcTime: 86400000 } });
+      const out = await SAMPLE.json(`Translate the Korean strings in this JSON object into ${langName} (${LANG}) for a political strategy game. Keep the same keys and structure, keep placeholders like {N} {T} {L} {NB} {RV} {AL} {F} {P} {D} {M} exactly as they are, keep empty strings empty. Natural, concise news-briefing tone. Reply with only the JSON object.\n\n${JSON.stringify(evPayload(ev))}`, { modelTier: "quick", cache: { gcTime: 86400000 } });
       if (out && out.title && Array.isArray(out.choices)) { EV_TR[key] = out; store.set("ev:" + key, out); }
     } catch (e) {
       if (e && (e.code === "not_granted" || e.code === "sampling_disabled" || e.code === "not_declared")) sampleState = "off";
@@ -2174,8 +2220,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     w.casQ = Math.round((Math.abs(w.dF) * 0.12 + 1) * (me.mil + fm) / 40 * casK);
     w.cas += w.casQ;
     const drain = (rk) => (3 + w.casQ * 0.5 + Math.min(w.age, 6) * 1.5) * rk;
-    w.sup = Math.round(clamp(w.sup - drain(REGK[me.reg]) + w.front / 8 - (me.fis < 15 ? 5 : 0) - (TAC[w.ft].drain || 0) - (TAC[w.tac].self || 0) - (w.pM || 0) * 25, -100, 100));
-    w.foeSup = Math.round(clamp(w.foeSup - drain(REGK[regime(f)]) - w.front / 8 - (TAC[w.tac].drain || 0) - (TAC[w.ft].self || 0) - (w.pF || 0) * 25, -100, 100));
+    w.sup = Math.round(clamp(w.sup - drain(REGK[me.reg]) + w.front / 8 - (me.fis < 15 ? 5 : 0) - (TAC[w.ft].drain || 0) - (TAC[w.tac].self || 0) - (w.pM || 0) * 25 - (w.vM || 0) * 30, -100, 100));
+    w.foeSup = Math.round(clamp(w.foeSup - drain(REGK[regime(f)]) - w.front / 8 - (TAC[w.tac].drain || 0) - (TAC[w.ft].self || 0) - (w.pF || 0) * 25 - (w.vF || 0) * 30, -100, 100));
     w.age++;
     if (w.front >= 80 || w.foeSup <= 0) return "win";
     if (w.front <= -80 || w.sup <= 0) return "lose";
@@ -2196,6 +2242,11 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     const oF = take(w.ordF, w.front), oM = take(w.ordM, -w.front);
     w.occF = oF.map((x) => x[0]); w.occM = oM.map((x) => x[0]);
     w.pF = share(w.ordF, oF); w.pM = share(w.ordM, oM);
+    // 승점(VP): 점령한 주에 있는 도시의 승점 비율
+    const vpOf = (iso, occ) => { const id = AT.isoToC[iso]?.id, set = new Set(occ); let all = 0, got = 0;
+      AT.cities.forEach((c, k) => { if (c[5] !== id) return; const v = cityVP(c[2], c[3]); all += v; if (set.has(AT.cityPid[k])) got += v; });
+      return [got, all ? got / all : 0]; };
+    [w.vpF, w.vF] = vpOf(w.foe, w.occF); [w.vpM, w.vM] = vpOf(G.iso, w.occM);
   }
   function setTac(foe, tac) {
     const w = G.war.find((x) => x.foe === foe);
@@ -2306,7 +2357,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       return `<div class="warcard"><div class="wc-head"><b>${flag(C[w.foe].iso2)} ${esc(cname(w.foe))}</b><span class="mono">${t("ws_" + w.side)} · ${t("w_qn", { n: w.age - (w.a0 || 0) + 1 })}</span></div>
         <div class="front" role="img" aria-label="${t("w_front")} ${w.front}"><span style="${bar}"></span></div>
         <div class="wc-row"><span>${w.gen.cfc ? t("w_cfc") : t("w_gen")} <b>${esc(w.gen.n)}</b> ${gs(w.gen)}</span><span>${t("w_foeGen")} <b>${esc(w.foeGen.n)}</b> ${gs(w.foeGen)}</span></div>
-        <div class="wc-row"><span>${t("w_plan")} <b>${t("o_" + w.ord)} · ${t("tac_" + w.tac)}</b></span><span>${t("w_occ", { a: (w.occF || []).length, b: (w.occM || []).length })}</span></div>
+        <div class="wc-row"><span>${t("w_plan")} <b>${t("o_" + w.ord)} · ${t("tac_" + w.tac)}</b></span><span>${t("w_occ", { a: (w.occF || []).length, b: (w.occM || []).length, v: w.vpF || 0, u: w.vpM || 0 })}</span></div>
         <div class="wc-row"><span>${t("w_front")} <b class="mono">${w.front > 0 ? "+" : ""}${w.front}</b></span><span>${t("w_sup")} <b class="mono">${w.sup}</b></span><span>${t("w_foeSup")} <b class="mono">${w.foeSup}</b></span><span>${t("w_cas")} <b class="mono">${w.cas}k</b></span></div></div>`;
     }).join("");
   }
@@ -2343,7 +2394,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     cr_warGraft: "전시 방산 비리",
     w_gen: "아군 지휘", w_foeGen: "적 지휘", w_cfc: "연합사령관", gs: "공{a}·방{d}·{tr}", w_gens: "아군 지휘관 {g}, 적 지휘관 {f}.", w_newGen: "새 전선 사령관 {g}이(가) 부임했다.",
     tr_bold: "과감", tr_cautious: "신중", tr_logist: "병참통", tr_veteran: "백전노장",
-    o_adv: "공세", o_def: "방어", w_plan: "작전", w_occ: "점령 {a}주 · 피점령 {b}주",
+    o_adv: "공세", o_def: "방어", w_plan: "작전", w_occ: "점령 {a}주(승점 {v}) · 피점령 {b}주(승점 {u})",
     tac_assault: "정면 돌파", tac_assault_d: "병력으로 밀어붙인다. 사상자가 많다",
     tac_flank: "측면 기동", tac_flank_d: "결과 편차가 크다. 공격력 높은 장군에게 유리",
     tac_encircle: "포위 섬멸", tac_encircle_d: "성공하면 큰 전과, 실패하면 역습당한다. 성공률은 공격력에 비례",
@@ -2371,7 +2422,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     cr_warGraft: "wartime arms graft",
     w_gen: "Our commander", w_foeGen: "Enemy commander", w_cfc: "Combined commander", gs: "Atk {a}·Def {d}·{tr}", w_gens: "Our commander is {g}; the enemy's is {f}.", w_newGen: "{g} took over as front commander.",
     tr_bold: "Bold", tr_cautious: "Cautious", tr_logist: "Logistician", tr_veteran: "Veteran",
-    o_adv: "Advance", o_def: "Defend", w_plan: "Plan", w_occ: "Holding {a} · lost {b} provinces",
+    o_adv: "Advance", o_def: "Defend", w_plan: "Plan", w_occ: "Holding {a} (VP {v}) · lost {b} (VP {u})",
     tac_assault: "Frontal assault", tac_assault_d: "Push through with numbers. Heavy casualties",
     tac_flank: "Flanking", tac_flank_d: "Swingy results. Suits a high-attack commander",
     tac_encircle: "Encirclement", tac_encircle_d: "Big gains if it works, a counterblow if not. Odds rise with attack",
@@ -2501,6 +2552,157 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   ];
   for (const e of WAR_EVENTS) { EVENTS.push(e); EV[e.id] = e; }
 
+  // ───────── 재난·사고 ─────────
+  // 자연재해: 태그별 연간 확률 py(피해가 큰 사건 기준, 추정)와 계절 가중. 지진 규모는 구텐베르크-리히터(b≈1).
+  // 사망자: 최소값 × 파레토 꼬리(a) × 취약도. 취약도는 소득·제도가 낮고 부패가 많을수록 커진다(Kahn 2005, Ambraseys & Bilham 2011).
+  // 인재: 기본 확률 × exp(−0.035 × (제도 지수 − 50)). 제도 지수 = 자유도·경제·정치 안정, 비리·안전 규제 반영.
+  const HAZ = {
+    quake: { tag: "quake", py: 0.2, dmin: 5, a: 1.0, cap: 80000 },
+    storm: { tag: "storm", py: 0.45, dmin: 5, a: 1.0, cap: 20000, season: [0.3, 0.5, 2.4, 0.8] },
+    flood: { tag: "flood", py: 0.5, dmin: 5, a: 1.0, cap: 8000, season: [0.5, 1.2, 1.8, 0.5] },
+    heat: { py: 0.12, dmin: 10, a: 1.1, cap: 6000, season: [0.1, 0.9, 2.9, 0.1] },
+    ferry: { acc: true, py: 0.07, dmin: 10, a: 1.3, cap: 800 },
+    crowd: { acc: true, py: 0.05, dmin: 10, a: 1.4, cap: 400 },
+    collapse: { acc: true, py: 0.05, dmin: 5, a: 1.2, cap: 1500 },
+    fire: { acc: true, py: 0.08, dmin: 5, a: 1.4, cap: 300 },
+    blast: { acc: true, py: 0.04, dmin: 5, a: 1.3, cap: 600 },
+  };
+  const DIRTY_KEYS = ["kickback", "family", "fl:crony", "prosecutor", "obstruct", "warGraft", "media"];
+  const dirtyN = () => G.x.crimes.filter((c) => DIRTY_KEYS.includes(c.key)).length;
+  const instOf = () => { const c = C[G.iso]; return clamp(Math.round(0.4 * c.fr + 0.3 * G.s.ec + 0.3 * c.as - 4 * dirtyN() + (G.flags.safety ? 10 : 0))); };
+  const hzPlace = () => (G && G.hz && AT.prov[G.hz.p] ? provName(AT.prov[G.hz.p]) : G ? cname(G.iso) : "");
+  function hazardRoll() {
+    const c = C[G.iso], reg = regime(c), inst = instOf(), dn = dirtyN();
+    const south = (AT.isoToC[G.iso]?.cap?.[1] ?? 10) < 0;
+    const season = (h) => h.season ? h.season[(G.q + (south ? 2 : 0)) % 4] : 1;
+    const accMul = Math.exp(-0.035 * (inst - 50)) * (G.flags.safety ? 0.6 : 1);
+    const reg3 = (...r) => r.includes(c.reg);
+    const mult = {
+      heat: c.tags.includes("desert") ? 2 : 1,
+      ferry: accMul * (c.tags.includes("island") || reg3("SEA", "SSA", "SAS") ? 2 : 1),
+      crowd: accMul * (reg3("SAS", "SSA") ? 1.6 : 1),
+      collapse: accMul * (1 + 0.25 * dn) * (G.s.ec > 60 ? 1.2 : 1),
+      fire: accMul, blast: accMul * (c.tags.includes("oil") || c.tags.includes("gas") ? 2 : 1),
+    };
+    const keys = Object.keys(HAZ).filter((k) => !HAZ[k].tag || c.tags.includes(HAZ[k].tag)).sort(() => Math.random() - 0.5);
+    for (const k of keys) {
+      const h = HAZ[k], pq = (1 - Math.pow(1 - Math.min(0.95, h.py * (mult[k] || 1)), 0.25)) * season(h);
+      if (Math.random() >= pq) continue;
+      // 장소: 인구 가중 무작위 주 (인파 사고는 가장 큰 도시권)
+      const id = AT.isoToC[G.iso]?.id, ps = Object.values(AT.prov).filter((x) => x.c === id && x.pop);
+      let prov = null;
+      if (ps.length) {
+        if (k === "crowd") prov = ps.sort((a, b) => b.pop - a.pop)[0];
+        else { let r = Math.random() * ps.reduce((a, x) => a + x.pop, 0); prov = ps.find((x) => (r -= x.pop) <= 0) || ps[0]; }
+      }
+      const popK = prov ? clamp(Math.sqrt(prov.pop / 2e6), 0.4, 3) : 1;
+      const vul = h.acc ? Math.exp(-0.01 * (inst - 50)) * (reg === "aut" ? 1.3 : 1)
+        : Math.exp(-(k === "quake" ? 0.04 : 0.025) * (G.s.ec - 50)) * Math.exp(-0.015 * (inst - 50)) * (G.flags["prep_" + k] ? 0.5 : 1) * (k === "quake" ? 1 + 0.15 * dn : 1);
+      const m = k === "quake" ? Math.min(9, 6 - Math.log10(Math.random())) : 0;
+      const raw = k === "quake" ? h.dmin * Math.pow(10, 1.1 * (m - 6)) * Math.exp(rand(-1, 1)) : h.dmin * Math.pow(Math.random(), -1 / h.a);
+      const d = Math.max(1, Math.round(Math.min(h.cap, raw * vul * (h.acc && k !== "crowd" ? 1 : popK))));
+      G.hz = { k, d, p: prov ? prov.id : null, m: Math.round(m * 10) / 10 };
+      const L = Math.log10(d + 1);
+      const fx = h.acc ? { we: -1, ap: -Math.round(L * { dem: 2.5, hyb: 1.5, aut: 0.8 }[reg]), as: reg === "dem" ? -Math.round(L) : 0 }
+        : { we: -Math.round(1.5 * L), ec: -Math.round(1.2 * L), fis: -Math.round(L), ap: -Math.round(0.5 * L) };
+      applyFx(fx);
+      addLog(t("hz_" + k, { P: hzPlace(), D: d.toLocaleString(), M: G.hz.m }), "big");
+      if (k === "collapse" && dn) { applyFx({ sus: 10 }); addLog(t("hz_graft"), "news"); }
+      G.queue.unshift({ id: "hz_" + k, at: G.q + 1 });
+      return;
+    }
+  }
+  // 개발용: simHaz("KOR", 20) — n분기 동안 일어난 재난·사고 수와 사망자 분포 (#demo일 때만)
+  function simHaz(iso, nq = 20, runs = 2000) {
+    const save = G, out = {};
+    for (let r = 0; r < runs; r++) {
+      G = { iso, q: 0, Q: nq, s: { ec: C[iso].ec, we: 50, ap: 50, as: C[iso].as, fis: 50, se: 50, env: 50, fat: 0 }, x: { crimes: [], sus: 0, slush: 0 }, flags: {}, queue: [], log: [], hz: null };
+      for (let q = 0; q < nq; q++) { G.q = q; G.hz = null; hazardRoll(); if (G.hz) (out[G.hz.k] ??= []).push(G.hz.d); }
+    }
+    G = save;
+    const res = Object.fromEntries(Object.entries(out).map(([k, v]) => { v.sort((a, b) => a - b); return [k, { perRun: +(v.length / runs).toFixed(2), median: v[v.length >> 1], p90: v[Math.floor(v.length * 0.9)] }]; }));
+    console.table(res);
+    return res;
+  }
+  if (DEMO) window.simHaz = simHaz;
+
+  Object.assign(STR.ko, {
+    hz_quake: "{P}에서 규모 {M} 지진. 사망·실종 {D}명.", hz_storm: "태풍이 {P}을(를) 덮쳤다. 사망·실종 {D}명.", hz_flood: "{P}에 기록적 폭우. 사망·실종 {D}명.", hz_heat: "{P}에 극한 폭염. 온열질환 사망 {D}명.",
+    hz_ferry: "{P} 해역에서 여객선 침몰. 사망·실종 {D}명.", hz_crowd: "{P} 도심 인파 밀집 사고. 사망 {D}명.", hz_collapse: "{P}에서 건물 붕괴. 사망·실종 {D}명.", hz_fire: "{P}에서 대형 화재. 사망 {D}명.", hz_blast: "{P} 산업단지 폭발 사고. 사망 {D}명.",
+    hz_graft: "부실 인허가 의혹이 측근 쪽으로 번지고 있다.", inst: "안전 제도",
+  });
+  Object.assign(STR.en, {
+    hz_quake: "Magnitude {M} earthquake in {P}. {D} dead or missing.", hz_storm: "A typhoon struck {P}. {D} dead or missing.", hz_flood: "Record rainfall in {P}. {D} dead or missing.", hz_heat: "Extreme heat in {P}. {D} heat deaths.",
+    hz_ferry: "A passenger ferry sank off {P}. {D} dead or missing.", hz_crowd: "A crowd crush in central {P}. {D} dead.", hz_collapse: "A building collapsed in {P}. {D} dead or missing.", hz_fire: "A major fire in {P}. {D} dead.", hz_blast: "An explosion at an industrial complex in {P}. {D} dead.",
+    hz_graft: "Suspicion over the building permits is spreading to people close to you.", inst: "Safety institutions",
+  });
+
+  // 재난·사고 사건: {P}=장소(주) {D}=사망·실종 {M}=지진 규모. 희생자를 희화화하는 선택지는 두지 않는다
+  const HZ_EVENTS = [
+    { id: "hz_quake", hz: true, chainOnly: true, dept: "재난 당국", title: "{P}에서 규모 {M} 지진이 발생했습니다",
+      body: "사망·실종 {D}명으로 집계됐습니다. 무너진 건물 상당수가 내진 기준 이전에 지어졌거나 시공이 부실했다는 지적이 나옵니다. 여진이 이어지고 있습니다.",
+      choices: [
+        { t: "군·소방을 총동원해 72시간 구조", fx: { fis: -6, we: 3, ap: 3, fat: 12 }, log: "군과 소방을 총동원해 구조 작전을 벌였다." },
+        { t: "국제 구조대를 받아들인다", fx: { we: 2 }, r: { al: 5, nb: 3 }, log: "{AL}과(와) {NB}의 구조대를 받아들였다." },
+        { t: "내진 규정 강화와 부실시공 수사", s: "다음 지진 피해를 줄인다", fx: { fis: -4, ec: -2, as: -1 }, flag: "prep_quake", log: "내진 규정을 강화하고 부실시공 수사를 지시했다." },
+      ] },
+    { id: "hz_storm", hz: true, chainOnly: true, dept: "재난 당국", title: "태풍이 {P}을(를) 덮쳤습니다",
+      body: "사망·실종 {D}명. 해안 마을이 잠기고 전력망 일부가 끊겼습니다. 대피 명령이 늦었다는 비판이 나옵니다.",
+      choices: [
+        { t: "특별재난지역 선포, 예비비 투입", fx: { fis: -6, we: 4, ap: 3 }, log: "특별재난지역을 선포하고 예비비를 풀었다." },
+        { t: "조기경보·대피 체계 개편", s: "다음 태풍 피해를 줄인다", fx: { fis: -4, ap: 1 }, flag: "prep_storm", log: "태풍 조기경보와 대피 체계를 개편했다." },
+        { t: "현장을 직접 방문", fx: { ap: 2, fat: 8 }, risk: { p: 0.35, fx: { ap: -6 }, log: "현장에서 웃으며 찍힌 사진이 퍼져 '보여주기 행정' 논란이 일었다." }, log: "피해 현장을 찾아 이재민을 만났다." },
+      ] },
+    { id: "hz_flood", hz: true, chainOnly: true, dept: "재난 당국", title: "{P}에 기록적인 폭우가 쏟아졌습니다",
+      body: "사망·실종 {D}명. 하천이 넘치고 지하차도와 반지하 주택이 잠겼습니다. 통제 요청이 있었지만 도로 통제가 늦었다는 보도가 나옵니다.",
+      choices: [
+        { t: "긴급 구호와 피해 보상", fx: { fis: -6, we: 3, ap: 3 }, log: "긴급 구호와 피해 보상을 시작했다." },
+        { t: "지하차도·반지하 침수 대책", s: "다음 홍수 피해를 줄인다", fx: { fis: -5, we: 1 }, flag: "prep_flood", log: "지하차도 자동 통제와 반지하 침수 대책을 마련했다." },
+        { t: "지자체 책임으로 돌린다", fx: { fis: 1, ap: -4, as: -2 }, log: "현장 대응은 지자체 소관이라고 선을 그었다." },
+      ] },
+    { id: "hz_heat", hz: true, chainOnly: true, dept: "보건부", title: "{P}에 극한 폭염이 이어지고 있습니다",
+      body: "체감온도 45도가 넘는 날이 열흘째입니다. 온열질환 사망자가 {D}명으로 늘었고, 대부분 노인과 야외 노동자입니다.",
+      choices: [
+        { t: "무더위 쉼터와 전기요금 감면", fx: { fis: -4, we: 3, ap: 2 }, log: "무더위 쉼터를 늘리고 전기요금을 깎아 줬다." },
+        { t: "폭염 시 야외작업 중지 의무화", s: "다음 폭염 피해를 줄인다", fx: { ec: -2, we: 2 }, flag: "prep_heat", log: "폭염 경보 때 야외작업을 멈추도록 의무화했다." },
+      ] },
+    { id: "hz_ferry", hz: true, chainOnly: true, dept: "해양 당국", title: "{P} 해역에서 여객선이 침몰했습니다",
+      body: "승객과 승무원 수백 명이 탄 여객선이 기울어 가라앉았습니다. 사망·실종 {D}명. 과적과 무리한 개조, 형식적인 안전 점검 의혹이 나오고, 초기 구조가 늦었다는 비판이 거셉니다.",
+      choices: [
+        { t: "구조를 직접 지휘하고 전 과정 공개", fx: { ap: 2, we: 1, fat: 15 }, log: "구조 상황을 직접 챙기고 모든 기록을 공개했다." },
+        { t: "독립 조사위원회와 해운 안전 개혁", s: "인재 확률을 낮춘다", fx: { fis: -4, ec: -1, as: -2, ap: 3 }, flag: "safety", log: "독립 조사위원회를 꾸리고 선박 안전 규제를 개혁했다." },
+        { t: "정부 책임을 축소해 발표한다", s: "불법", fx: { ap: -2, sus: 12 }, crime: "coverup", risk: { p: 0.5, fx: { ap: -12, as: -6 }, log: "구조 지연을 숨긴 정황이 드러나 분노가 폭발했다." }, log: "초기 대응 기록 일부를 빼고 발표했다." },
+      ] },
+    { id: "hz_crowd", hz: true, chainOnly: true, dept: "치안 당국", title: "{P} 도심에서 인파 밀집 사고가 났습니다",
+      body: "축제 인파가 좁은 골목에 몰리며 사람들이 넘어졌습니다. 사망 {D}명. 사고 전 위험 신고가 여러 차례 있었지만 현장 통제 인력이 거의 없었다는 보도가 나옵니다.",
+      choices: [
+        { t: "국가 애도 기간과 유족 지원", fx: { fis: -2, ap: 2, we: 1 }, log: "국가 애도 기간을 선포하고 유족 지원을 약속했다." },
+        { t: "인파 관리 법제화와 지휘 책임 규명", s: "인재 확률을 낮춘다", fx: { as: -3, ap: 4 }, flag: "safety", log: "주최자 없는 행사도 인파 관리를 하도록 법을 바꾸고 지휘 책임을 따졌다." },
+        { t: "주최자가 없어 책임 소재가 없다고 발표", fx: { ap: -7, as: -2 }, log: "주최자 없는 행사라 국가 책임은 없다고 밝혔다. 거센 반발이 일었다." },
+      ] },
+    { id: "hz_collapse", hz: true, chainOnly: true, dept: "국토 당국", title: "{P}에서 건물이 무너졌습니다",
+      body: "영업 중이던 건물이 갑자기 주저앉았습니다. 사망·실종 {D}명. 불법 증축과 설계 변경, 인허가 과정의 뒷돈 의혹이 제기됩니다.",
+      choices: [
+        { t: "전국 노후 건축물 일제 점검", s: "인재 확률을 낮춘다", fx: { fis: -5, ec: -1 }, flag: "safety", log: "전국 노후 건축물 일제 점검에 들어갔다." },
+        { t: "인허가 비리 전면 수사", fx: { as: -2, ap: 3, sus: 6 }, log: "인허가 비리를 전면 수사하라고 지시했다." },
+        { t: "시공사 책임으로 정리한다", fx: { ap: -3 }, log: "시공사 과실로 사건을 정리했다." },
+      ] },
+    { id: "hz_fire", hz: true, chainOnly: true, dept: "소방 당국", title: "{P}에서 대형 화재가 났습니다",
+      body: "가연성 자재로 지은 건물에 불이 번지며 대피로가 막혔습니다. 사망 {D}명. 스프링클러가 꺼져 있었다는 진술이 나옵니다.",
+      choices: [
+        { t: "소방 설비 점검과 가연성 자재 금지", s: "인재 확률을 낮춘다", fx: { fis: -3, ec: -1 }, flag: "safety", log: "소방 설비 점검을 강화하고 가연성 외장재를 금지했다." },
+        { t: "유족 지원과 원인 조사", fx: { fis: -2, ap: 2 }, log: "유족 지원과 원인 조사를 약속했다." },
+      ] },
+    { id: "hz_blast", hz: true, chainOnly: true, dept: "산업 당국", title: "{P} 산업단지에서 폭발 사고가 났습니다",
+      body: "화학 공장에서 연쇄 폭발이 일어나 유독가스가 주변으로 퍼졌습니다. 사망 {D}명. 하청 노동자 피해가 컸고 안전 인력이 줄었다는 지적이 나옵니다.",
+      choices: [
+        { t: "중대재해 처벌 강화와 위험물 관리 개편", s: "인재 확률을 낮춘다", fx: { ec: -2, we: 1, ap: 2 }, flag: "safety", log: "위험물 관리와 중대재해 처벌을 강화했다." },
+        { t: "주민 대피와 피해 보상", fx: { fis: -4, we: 2, env: -2 }, log: "주민을 대피시키고 피해를 보상했다." },
+        { t: "기업 부담을 이유로 규제는 미룬다", fx: { ec: 1, ap: -4, env: -2 }, log: "기업 부담을 이유로 규제 강화를 미뤘다." },
+      ] },
+  ];
+  for (const e of HZ_EVENTS) { EVENTS.push(e); EV[e.id] = e; }
+
   let G = null;
   const SURN = { ko: ["김", "이", "박", "최", "정", "강", "윤", "한", "서", "오"], x: ["Alvarez", "Novak", "Okafor", "Sato", "Haddad", "Larsen", "Mendes", "Kaur", "Petrov", "Nguyen", "Moreau", "Schmidt", "Rossi", "Kim"] };
   const GIVN = { ko: ["민준", "서연", "도윤", "하은", "지호", "유진", "태경", "은솔", "가람", "예린"], x: ["Ana", "Leo", "Amara", "Yuki", "Omar", "Ingrid", "Rafael", "Priya", "Elena", "Minh", "Claire", "Jonas", "Sofia", "Hana"] };
@@ -2615,7 +2817,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (!s) return "";
     const c = C[G.iso];
     const T = isCamp() ? t(autLadder(c) ? "cand_aut" : c.gov === "PM" ? "cand_pm" : "cand_dem") : title(c);
-    return s.replace(/\{(N|T|L|NB|RV|AL|X|O|F)\}/g, (_, k) => ({ N: cname(G.iso), T, L: G.name, NB: cname(G.ctx.nb), RV: cname(G.ctx.rv), AL: cname(G.ctx.al), X: G.ctx.X ? crimeLabel(G.ctx.X) : "", O: cname(G.origin), F: G.ctx.F ? cname(G.ctx.F) : "" }[k] || ""));
+    return s.replace(/\{(N|T|L|NB|RV|AL|X|O|F|P|D|M)\}/g, (_, k) => ({ N: cname(G.iso), T, L: G.name, NB: cname(G.ctx.nb), RV: cname(G.ctx.rv), AL: cname(G.ctx.al), X: G.ctx.X ? crimeLabel(G.ctx.X) : "", O: cname(G.origin), F: G.ctx.F ? cname(G.ctx.F) : "",
+      P: hzPlace(), D: G.hz ? G.hz.d.toLocaleString() : "", M: G.hz ? G.hz.m : "" }[k] ?? ""));
   }
 
   // ── 사건 고르기 ──
@@ -2678,7 +2881,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (!checkEnd()) {
       render(); updateMap();
       const src = tx || evPayload(ev);
-      genFeed(ev.scandal ? "scandal" : "event", { event: fill(src.title), choice: fill(src.choices[i].t), result: text, bad: bad || !!ev.scandal, deltas: Object.entries(d).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`).join(", ") });
+      genFeed(ev.scandal ? "scandal" : "event", { event: fill(src.title), choice: fill(src.choices[i].t), result: text, bad: bad || !!ev.scandal, disaster: !!ev.hz, deltas: Object.entries(d).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`).join(", ") });
     }
   }
 
@@ -2861,6 +3064,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     if (news.length) addLog(t(pick(news)), "news");
     if (G.q === G.Q - 1) { G.q += 1; finishTerm(); return; }
     exposureCheck();
+    if (G.q < G.Q - 2) hazardRoll();
     G.q += 1;
     G.electionNote = null;
     const reg = regime(c);
@@ -3112,40 +3316,48 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   let feedBusy = false;
   const AV_COLORS = ["#2f6f62", "#7a4fa0", "#b0582f", "#2f5f9e", "#8a7a1f", "#a03a5b", "#3f7f3a", "#5a5f6b"];
   const avColor = (s) => AV_COLORS[[...String(s)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % AV_COLORS.length];
+  // 기본 반응 문구. "그룹|문장" 형식이면 그 그룹(연령대·커뮤니티) 닉네임으로 올라간다
   const OFF = {
     ko: {
-      anti: ["{L} 진짜 뭐 하는 거임? 이게 정책이냐 ㅋㅋ", "또 {L}이 사고 쳤네… 세금 아깝다 진심", "'{E}' 대응 보니까 지지율 이유가 있다", "{L} 이번 결정은 선 넘었다. 다음 선거 두고 보자", "{RV} 앞에서 이게 뭐냐 {L}… 창피하다", "현장은 하나도 모르는 소리 #{N}"],
-      pro: ["이번 건은 {L} 잘했다 인정", "'{E}' 이 정도면 선방한 듯", "{L} 욕하던 사람들 이번엔 조용하네 ㅋㅋ"],
-      neu: ["'{E}' 뉴스 보고 왔는데 다들 어떻게 생각함?", "솔직히 누가 해도 어려운 문제였음", "{NB} 반응은 어떤지 궁금하네"],
-      scandal: ["{X}? {L} 이 ㅅㄲ 이럴 줄 알았다", "{L} 사퇴해라. {X}가 말이 되냐", "내 세금으로 {X}… 진짜 화나서 잠이 안 온다", "{L} 찍은 내 손가락 자르고 싶다", "#{L}_구속 #{X}", "{X} 터진 거 보고도 쉴드 치는 사람들 대단하다"],
+      anti: ["anon|{L} 또 뇌절함 ㅋㅋㅋ 이게 정책이냐", "anon|ㄹㅇ 이 정부는 답이 없음. 개추 박고 간다", "anon|'{E}' 이거 실화냐? 국밥 한 그릇 값도 못 하는 결정임", "teen|급식 먹다가 뉴스 봄 {L} 머함?? ㅋㅋ 노답", "twenty|취준 3년차인데 '{E}' 보고 그냥 웃음만 나옴", "office|출근길에 기사 보고 한숨만 나온다. 세금은 꼬박꼬박 떼가면서", "biz|장사 20년에 이런 경기는 처음입니다. {L} 정부는 현장을 모릅니다", "senior|나라 꼴이 이게 뭡니까… {L} 정신 차리세요!!", "anon|{RV} 앞에서 이게 뭐냐 ㅅㅂ 국격 실종", "twenty|#{N} 이번 결정은 선 넘었다. 다음 선거 두고 보자"],
+      pro: ["senior|이번 결정은 잘했습니다^^ 박수 보냅니다", "office|'{E}' 대응은 솔직히 선방했다고 본다", "anon|ㅇㅈ 이번 건은 {L} 잘했음. 까던 애들 조용하네 ㅋㅋ", "biz|모처럼 숨통이 트입니다. 계속 이렇게만 해 주세요"],
+      neu: ["twenty|'{E}' 뉴스 보고 왔는데 다들 어떻게 생각함?", "office|솔직히 누가 해도 어려운 문제였음", "senior|{NB}에서는 어떻게 보고 있는지 궁금하네요…", "teen|ㅇㅇ 근데 이거 우리랑 무슨 상관임?"],
+      scandal: ["anon|{X}?? ㅋㅋㅋ 그럴 줄 알았다 ㄹㅇ", "office|{L} 사퇴해라. {X}가 말이 되냐", "biz|내 세금으로 {X}… 화나서 잠이 안 옵니다", "senior|{L} 찍은 게 부끄럽습니다. 국민 앞에 사죄하세요", "teen|#{L}_구속 #{X} 실검 1위 ㅋㅋ", "anon|{X} 터졌는데 아직도 쉴드 치는 애들 뭐임"],
+      grief: ["senior|희생되신 분들의 명복을 빕니다. 가족분들 생각하면 가슴이 미어집니다", "office|미리 경고가 있었다는데 그동안 정부는 뭐 했냐", "twenty|또 같은 일이 반복됐다. 이번엔 책임자 꼭 밝혀라", "biz|{P} 주민들 아무 일 없기를… 구조가 늦어지면 안 됩니다", "anon|유족한테 막말하는 댓글들 신고 좀 하자. 선은 지켜라", "teen|뉴스 보다가 울었음… 다들 무사했으면"],
     },
     en: {
-      anti: ["What is {L} even doing? This is policy now? lol", "{L} messed up again. What a waste of tax money", "After the '{E}' response, the approval numbers make sense", "{L} crossed a line with this one. See you at the ballot box", "Embarrassing in front of {RV}, {L}", "Zero idea what's happening on the ground #{N}"],
-      pro: ["Credit where due, {L} got this one right", "Honestly a decent call on '{E}'", "All the {L} haters are quiet today lol"],
-      neu: ["Just saw the '{E}' news, what does everyone think?", "Tough problem no matter who's in charge", "Wonder how {NB} is taking this"],
-      scandal: ["{X}?? Knew it. {L} is a crook", "{L} resign. {X}, seriously?", "My taxes paid for {X}. Furious", "Regret ever voting for {L}", "#Lock{L}Up #{X}", "Still defending {L} after {X}? Wow"],
+      anti: ["anon|lmao {L} fumbled again, this is policy now?", "twenty|Job hunt year 3 and '{E}' is what we get", "office|Read this on the train. Taxes up, results down", "biz|20 years running a shop and never seen it this bad", "senior|What has happened to this country? Wake up, {L}!", "anon|Embarrassing in front of {RV}. Zero idea what's happening on the ground #{N}"],
+      pro: ["senior|Good decision. Well done.", "office|Honestly a decent call on '{E}'", "anon|ngl {L} got this one right, the haters are quiet lol"],
+      neu: ["twenty|Just saw the '{E}' news, what does everyone think?", "office|Tough problem no matter who's in charge", "senior|Wonder how {NB} is taking this..."],
+      scandal: ["anon|{X}?? knew it lol", "office|{L} resign. {X}, seriously?", "biz|My taxes paid for {X}. Furious", "senior|I regret voting for {L}. Apologize to the people", "teen|#Lock{L}Up #{X} trending lol"],
+      grief: ["senior|Rest in peace to everyone we lost. My heart goes out to the families", "office|There were warnings. What were the authorities doing?", "twenty|Same thing again. Name who's responsible this time", "anon|Report the trolls harassing the families. Have some decency"],
     },
   };
   const NICKS = {
-    ko: [["세금내는직장인", "taxpayer_kim"], ["동네치킨집사장", "chicken_boss"], ["취준생3년차", "jobseeker_03"], ["경제오타쿠", "econ_nerd"], ["은퇴한교사", "retired_teacher"], ["새벽배송기사", "dawn_driver"], ["대학원생A", "grad_student_a"], ["농부의아들", "farmers_son"]],
-    en: [["Tired Taxpayer", "tired_taxpayer"], ["Corner Diner", "corner_diner"], ["Job Hunt Day 900", "jobhunt900"], ["Econ Nerd", "econ_nerd"], ["Retired Teacher", "retired_teach"], ["Night Shift Nurse", "nightshift_rn"], ["Grad Student", "grad_student"], ["Farm Kid", "farm_kid"]],
+    ko: { teen: [["급식은못참지", "lunch_17"], ["고2수포자", "math_gg"]], twenty: [["취준생3년차", "jobseeker_03"], ["대학원생A", "grad_student_a"], ["새벽배송기사", "dawn_driver"]],
+      office: [["세금내는직장인", "taxpayer_kim"], ["판교야근러", "pangyo_ot"], ["워킹맘11년차", "workmom_11"]], biz: [["동네치킨집사장", "chicken_boss"], ["시장통김사장", "market_kim"]],
+      senior: [["은퇴한교사", "retired_teacher"], ["손주바보할배", "grandpa_lee"], ["농부의아들", "farmers_son"]], anon: [["ㅇㅇ(118.235)", "anon_118"], ["ㅇㅇ(211.36)", "anon_211"], ["익명의갤러", "anon_gall"]] },
+    en: { teen: [["Farm Kid", "farm_kid"]], twenty: [["Job Hunt Day 900", "jobhunt900"], ["Grad Student", "grad_student"]], office: [["Tired Taxpayer", "tired_taxpayer"], ["Night Shift Nurse", "nightshift_rn"]],
+      biz: [["Corner Diner", "corner_diner"]], senior: [["Retired Teacher", "retired_teach"]], anon: [["Anonymous", "anon_4821"], ["throwaway_77", "throwaway_77"]] },
   };
   const curAp = () => isCamp() ? G.c.poll * 1.6 : G.s.ap;
   function offlinePosts(ctx, n, scandal) {
     const L = LANG === "ko" ? "ko" : "en";
     const pool = OFF[L], nicks = NICKS[L];
+    const disaster = !!ctx.disaster;
     const antiShare = scandal ? 0.85 : clamp(1 - curAp() / 100 + (ctx.bad ? 0.15 : 0), 0.2, 0.9);
     const out = [];
     for (let i = 0; i < n; i++) {
       const r = Math.random();
       const stance = r < antiShare ? "anti" : r < antiShare + 0.2 ? "pro" : "neutral";
-      const bucket = stance === "anti" ? (scandal ? pool.scandal : pool.anti) : stance === "pro" ? pool.pro : pool.neu;
+      const bucket = disaster ? pool.grief : stance === "anti" ? (scandal ? pool.scandal : pool.anti) : stance === "pro" ? pool.pro : pool.neu;
       let tpl = pick(bucket);
       for (let k = 0; k < 6 && out.some((o) => o.tpl === tpl); k++) tpl = pick(bucket);
       if (!ctx.event && tpl.includes("{E}")) tpl = pick(pool.anti.filter((x) => !x.includes("{E}")));
-      const [name, handle] = pick(nicks);
-      const text = tpl.replace(/\{(L|E|N|NB|RV|X)\}/g, (_, k) => ({ L: G.name.replace(/\s/g, ""), E: ctx.event || "", N: cname(G.iso).replace(/\s/g, ""), NB: cname(G.ctx.nb), RV: G.ctx.rv ? cname(G.ctx.rv) : "", X: G.ctx.X ? crimeLabel(G.ctx.X) : "" }[k]));
-      out.push({ tpl, name, handle, text, stance, likes: ri(3, 4000), reposts: ri(0, 600), replies: ri(0, 200) });
+      const [grp, body] = tpl.includes("|") ? tpl.split("|") : ["anon", tpl];
+      const [name, handle] = pick(nicks[grp] || nicks.anon);
+      const text = body.replace(/\{(L|E|N|NB|RV|X|P)\}/g, (_, k) => ({ L: G.name.replace(/\s/g, ""), E: ctx.event || "", N: cname(G.iso).replace(/\s/g, ""), NB: cname(G.ctx.nb), RV: G.ctx.rv ? cname(G.ctx.rv) : "", X: G.ctx.X ? crimeLabel(G.ctx.X) : "", P: hzPlace() }[k]));
+      out.push({ tpl, name, handle, text, stance: disaster ? "neutral" : stance, likes: ri(3, 4000), reposts: ri(0, 600), replies: ri(0, 200) });
     }
     return out;
   }
@@ -3164,6 +3376,8 @@ ${extra}
 Other countries in the news: ${others || "none"}.`;
   }
   const FEED_RULES = "Rules: this is a clearly fictional game feed. Posts may attack the fictional leader by name for the in-game decisions and the exposed in-game scandals listed above, with harsh criticism, sarcasm, mockery and masked profanity the way people write online. Real people (such as other countries' real leaders) may only be criticized for their public policies; never attribute crimes, scandals, health, family or private-life claims to any real person. No slurs or attacks on any ethnic, religious, gender or other group. No threats, no calls for violence, no sexual content.";
+  const FEED_VOICES = "Voices: mix age groups — teens (abbreviations, memes), people in their 20s (job-hunting, rent), 30s-40s office workers and parents, 50s small-business owners, 60s-70s seniors (formal endings, ellipses, exclamation marks, '^^') — and make about one post in four sound like an anonymous imageboard or forum regular (in Korean, DC Inside-style: terse -음/-임 endings, ㅋㅋ, ㄹㅇ, 개추, masked profanity like ㅅㅂ; elsewhere the local equivalent). Rough tone is fine, but still no slurs or demeaning terms for any group, including gender, region, age or disability.";
+  const GRIEF_RULE = "This is a disaster or accident with victims. Posts express grief, worry, shock and anger at how the authorities prevented or handled it. Never mock, joke about, blame or insult the victims, survivors or bereaved families, and no conspiracy claims about them.";
   const langName = () => LANGS.find((l) => l[0] === LANG)?.[1] || LANG;
   function cleanPosts(out) {
     return (Array.isArray(out) ? out : []).filter((x) => x && typeof x.text === "string" && x.text.trim()).slice(0, 8).map((x) => ({
@@ -3179,7 +3393,7 @@ Other countries in the news: ${others || "none"}.`;
     const scandal = kind === "scandal";
     if (sampleState !== "ready") {
       if (kind === "leader") addLeaderPost(payload.text, offlinePosts(payload, 3, false));
-      else addPosts(offlinePosts(payload, kind === "more" ? 3 : scandal ? 6 : 4, scandal));
+      else addPosts(offlinePosts(payload, kind === "more" ? 3 : scandal || payload.disaster ? 6 : 4, scandal));
       render(); return;
     }
     feedBusy = true; render();
@@ -3190,6 +3404,7 @@ Other countries in the news: ${others || "none"}.`;
 ${feedContext(`The leader just posted from the official account: "${payload.text}"`)}
 Write 4 replies in ${langName()} from ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there reply to a politician: short, colloquial, slang, sarcasm, memes. About ${anti}% critical, the rest supportive or neutral, reacting to what the leader actually wrote and to any exposed scandals.
 ${FEED_RULES}
+${FEED_VOICES}
 Reply with only a JSON array of objects {"name": display name, "handle": latin handle without @, "text": reply, "stance": "pro"|"anti"|"neutral", "likes": number}.`;
     } else {
       const situation = payload.event
@@ -3199,6 +3414,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
 ${feedContext(situation)}
 Write ${kind === "more" ? 4 : 6} posts in ${langName()} by ordinary fictional citizens of ${cname(G.iso)}, the way real netizens there post: short, colloquial, slang, sarcasm, memes, hashtags, a few longer rants. Mention the leader by name in several posts${scandal ? " and pile on about the scandal: anger, resignation demands, jokes, a few die-hard defenders" : ""}. About ${anti}% critical, the rest supportive or neutral. Vary the voices (workers, students, retirees, business owners, partisans of both sides).
 ${FEED_RULES}
+${FEED_VOICES}${payload.disaster ? "\n" + GRIEF_RULE : ""}
 Reply with only a JSON array of objects {"name": display name, "handle": latin handle without @, "text": post, "stance": "pro"|"anti"|"neutral", "likes": number, "reposts": number, "replies": number}.`;
     }
     try {
@@ -3336,7 +3552,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
       ${warView()}
       ${["ec", "we", "se", "mil", "as", "env", "fis", "fat"].map(row).join("")}
       ${corruptRows()}
-      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span>${NO_OPCON[G.iso] ? `<span>${t("opcon")}: <b>${t(hasOpcon() ? "opcon_y" : "opcon_n")}</b></span>` : ""}</div>
+      <div class="facts"><span>${t("gov")}: <b>${t("sys_" + c.gov)} · ${t("reg_" + reg)}</b></span><span>${t("fr")}: <b>${c.fr}/100</b> · ${t("debt")}: <b>${c.debt}%</b></span><span>${t("bloc")}: <b>${t("bloc_" + c.bloc)}</b></span><span>${t("inst")}: <b>${instOf()}/100</b></span>${NO_OPCON[G.iso] ? `<span>${t("opcon")}: <b>${t(hasOpcon() ? "opcon_y" : "opcon_n")}</b></span>` : ""}</div>
       ${w.length ? `<div class="warns">${w.map((x) => `<div class="warn">${x}</div>`).join("")}</div>` : ""}
     </aside>`;
   }
