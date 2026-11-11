@@ -1717,14 +1717,35 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     sh.map((v, i) => [v / tot * n - cnt[i], i]).sort((a, b) => b[0] - a[0]).slice(0, rem).forEach(([, i]) => cnt[i]++);
     return ["inf", "arm", "heli", "air"].flatMap((k, i) => Array(cnt[i]).fill(k));
   }
-  // 프롭 스프라이트: 무료 3D 모델을 진영별 색으로 칠해 미리 렌더링한 PNG (출처는 README)
-  // 전차·헬기·보병 분대는 비스듬한 측면, 전투기는 수직 상면. 모두 오른쪽을 향한다
+  // 프롭 스프라이트: 측면 전차·보병·공격헬기, 상면 전투기. 색은 진영별 위장색
+  const CAMO = { me: ["#8e9a5b", "#5f6b34", "#3d4721", "#1b2010"], foe: ["#9a917a", "#6b6452", "#47422f", "#201d14"] };
+  const JETC = { me: ["#b3bbc0", "#6b757c", "#262b2e"], foe: ["#a8a197", "#5f5a52", "#26231f"] };
+  const SVG = {
+    arm: ([L, M, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.55' stop-color='${M}'/><stop offset='1' stop-color='${D}'/></linearGradient><linearGradient id='w' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#5d5d55'/><stop offset='1' stop-color='#222220'/></linearGradient></defs>
+      <path d='M9 41h102l-7 13H17z' fill='#1e1e1b'/><g fill='url(#w)' stroke='#161614' stroke-width='1'><circle cx='14' cy='45' r='4.2'/><circle cx='24' cy='47.5' r='6'/><circle cx='37' cy='47.5' r='6'/><circle cx='50' cy='47.5' r='6'/><circle cx='63' cy='47.5' r='6'/><circle cx='76' cy='47.5' r='6'/><circle cx='89' cy='47.5' r='6'/><circle cx='102' cy='46' r='5'/></g>
+      <g fill='#8d8d84'><circle cx='24' cy='47.5' r='1.8'/><circle cx='37' cy='47.5' r='1.8'/><circle cx='50' cy='47.5' r='1.8'/><circle cx='63' cy='47.5' r='1.8'/><circle cx='76' cy='47.5' r='1.8'/><circle cx='89' cy='47.5' r='1.8'/></g>
+      <path d='M8 40 L18 31 H100 L114 36 L112 42 H8 Z' fill='url(#g)' stroke='${K}'/><path d='M15 37 H107 V44 H15 Z' fill='${M}' stroke='${K}' stroke-width='.8'/><path d='M30 37v7M45 37v7M60 37v7M75 37v7M90 37v7' stroke='${K}' stroke-opacity='.45'/>
+      <path d='M30 31 L36 21 Q40 18 46 18 H78 L92 23 L94 31 Z' fill='url(#g)' stroke='${K}'/><rect x='23' y='22' width='9' height='8' fill='${D}' stroke='${K}' stroke-width='.6'/>
+      <path d='M92 23.4 H116 V26.6 H92 Z' fill='${D}' stroke='${K}' stroke-width='.6'/><rect x='111' y='22.3' width='6.5' height='5.4' rx='.8' fill='${K}'/><rect x='48' y='14.5' width='10' height='4' rx='1' fill='${D}' stroke='${K}' stroke-width='.6'/><path d='M60 15 L71 13' stroke='${K}' stroke-width='1.3'/>
+      <path d='M40 25 q6 -4 12 0 t10 2 v4 h-22z' fill='${D}' opacity='.38'/><path d='M20 34 q8 -3 16 0 v3 h-16z' fill='${D}' opacity='.3'/><path d='M70 33 q8 -4 18 0 v4 h-18z' fill='${D}' opacity='.3'/><path d='M19 32 H99' stroke='#fff' stroke-opacity='.25'/></svg>`,
+    inf: ([L, M, D, K]) => {
+      const man = (x, s, kneel) => `<g transform='translate(${x} ${kneel ? 6 : 0}) scale(${s})'><path d='${kneel ? "M11 47 L16 40 L22 47 M16 40 L12 48" : "M10 54 L14 40 L18 54"}' stroke='${D}' stroke-width='3.4' fill='none' stroke-linecap='round'/><rect x='10' y='24' width='9' height='17' rx='3' fill='url(#g)' stroke='${K}' stroke-width='.6'/><rect x='6.4' y='26' width='5' height='11' rx='1.5' fill='${D}' stroke='${K}' stroke-width='.4'/><circle cx='15' cy='19' r='3.4' fill='#c49d7a'/><path d='M10.7 18.6 Q15 11.2 19.5 18.6 Z' fill='${D}' stroke='${K}' stroke-width='.6'/><path d='M12 31 L26 27.5' stroke='#1d1d1b' stroke-width='2.3' stroke-linecap='round'/><path d='M16 29 L22 30.5' stroke='${M}' stroke-width='3' stroke-linecap='round'/></g>`;
+      return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='1' stop-color='${D}'/></linearGradient></defs>${man(0, 1, false)}${man(20, 0.95, true)}${man(38, 1, false)}</svg>`;
+    },
+    heli: ([L, M, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.6' stop-color='${M}'/><stop offset='1' stop-color='${D}'/></linearGradient><linearGradient id='gl' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#cfe3ea'/><stop offset='1' stop-color='#3f5560'/></linearGradient></defs>
+      <path d='M32 28 L5 25 V29.5 L32 34.5 Z' fill='${M}' stroke='${K}'/><path d='M7 25 L3 11 H8 L12 25 Z' fill='${D}' stroke='${K}'/><circle cx='5.5' cy='15' r='6.5' fill='${K}' opacity='.16'/>
+      <path d='M30 30 Q34 22 52 21 H74 Q92 22 99 30 Q101 36 92 39.5 H46 Q34 39.5 30 34 Z' fill='url(#g)' stroke='${K}'/><path d='M76 23 Q90 24 96.5 31 H80 Z' fill='url(#gl)' stroke='${K}' stroke-width='.6'/><path d='M62 22 Q72 22 76 27 L66 28 Z' fill='url(#gl)' stroke='${K}' stroke-width='.6'/>
+      <rect x='51' y='15.5' width='23' height='6.5' rx='3' fill='${D}' stroke='${K}'/><rect x='61' y='10' width='3' height='6' fill='${K}'/><rect x='49' y='33' width='24' height='3' fill='${D}'/><rect x='53' y='36' width='15' height='5' rx='2.2' fill='#2b2b28'/>
+      <path d='M88 39 L99 41.5' stroke='#1d1d1b' stroke-width='2'/><circle cx='50' cy='43.5' r='2.3' fill='#1d1d1b'/><circle cx='86' cy='42.5' r='2.3' fill='#1d1d1b'/><path d='M36 27 H94' stroke='#fff' stroke-opacity='.22'/></svg>`,
+    air: ([L, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><defs><linearGradient id='j' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.5' stop-color='${D}'/><stop offset='1' stop-color='${L}'/></linearGradient><linearGradient id='gl' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#3a4f5a'/><stop offset='1' stop-color='#cfe6ef'/></linearGradient></defs>
+      <path d='M58 33 L40 5 L32 5 L38 33 Z M58 37 L40 65 L32 65 L38 37 Z' fill='${D}' stroke='${K}' stroke-width='.8'/><path d='M22 32 L11 19 H6 L12 32 Z M22 38 L11 51 H6 L12 38 Z' fill='${D}' stroke='${K}' stroke-width='.8'/>
+      <path d='M6 35 Q10 31 30 30.5 L80 32 Q94 34 99 35 Q94 36 80 38 L30 39.5 Q10 39 6 35 Z' fill='url(#j)' stroke='${K}' stroke-width='.8'/><ellipse cx='79' cy='35' rx='8.5' ry='2.7' fill='url(#gl)'/><rect x='3' y='32.5' width='5' height='5' rx='1' fill='#2a2a2a'/><path d='M40 10 L36 10' stroke='${K}'/></svg>`,
+  };
   const SPR = {};
   function buildSprites() {
     for (const side of ["me", "foe"]) for (const k of ["arm", "inf", "heli", "air"]) {
       const im = new Image();
-      im.onload = () => requestDraw();
-      im.src = `atlas/units/${k}_${side}.png`;
+      im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(SVG[k](k === "air" ? JETC[side] : CAMO[side]));
       SPR[k + side] = im;
     }
   }
@@ -1801,20 +1822,22 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       const im = SPR[u.k + (u.mine ? "me" : "foe")];
       if (!im || !im.complete || !im.naturalWidth) continue;
       if (u.k === "air") {
-        const s = S * 1.2, sh = s * im.naturalHeight / im.naturalWidth;
-        ctx.save(); ctx.translate(u.x + 9, u.y + 14); ctx.rotate(u.rot); ctx.globalAlpha = 0.22; ctx.filter = "brightness(0)"; ctx.drawImage(im, -s / 2, -sh / 2, s, sh); ctx.restore();
-        ctx.save(); ctx.translate(u.x, u.y); ctx.rotate(u.rot); ctx.drawImage(im, -s / 2, -sh / 2, s, sh);
+        const s = S * 1.05;
+        ctx.save(); ctx.translate(u.x + 9, u.y + 14); ctx.rotate(u.rot); ctx.globalAlpha = 0.22; ctx.filter = "brightness(0)"; ctx.drawImage(im, -s / 2, -s * 0.35, s, s * 0.7); ctx.restore();
+        ctx.save(); ctx.translate(u.x, u.y); ctx.rotate(u.rot); ctx.drawImage(im, -s / 2, -s * 0.35, s, s * 0.7);
         ctx.fillStyle = `rgb(${u.col})`; ctx.beginPath(); ctx.arc(-s * 0.05, -s * 0.22, 2.2, 0, Math.PI * 2); ctx.arc(-s * 0.05, s * 0.22, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
         continue;
       }
-      const wv = S * (u.k === "arm" ? 1.3 : u.k === "heli" ? 1.3 : 0.7), hv = wv * im.naturalHeight / im.naturalWidth;
+      const wv = u.k === "arm" ? S : u.k === "heli" ? S * 1.15 : S * 0.72, hv = u.k === "arm" ? wv * 0.5 : u.k === "heli" ? wv * 0.46 : wv * 0.94;
       ctx.save(); ctx.translate(u.x, u.y);
       if (u.k !== "heli") { ctx.fillStyle = `rgba(${u.col},.55)`; ctx.strokeStyle = `rgba(${u.col},.95)`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(0, hv * 0.42, wv * 0.5, hv * 0.16, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
       else { ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(0, hv * 0.9 + 12, wv * 0.35, hv * 0.12, 0, 0, Math.PI * 2); ctx.fill(); }
       if (!u.face) ctx.scale(-1, 1);
       ctx.drawImage(im, -wv / 2, -hv / 2, wv, hv);
-      if (u.k === "heli") { // 회전익 잔상
-        ctx.fillStyle = "rgba(40,40,36,.12)"; ctx.beginPath(); ctx.ellipse(wv * 0.12, -hv * 0.32, wv * 0.5, 2.4 + Math.sin(performance.now() / 30) * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      if (u.k === "heli") { // 주 회전익: 반투명 원반 + 도는 날개
+        const ry = -hv * 0.36, rx = wv * 0.52, a = (performance.now() / 40) % (Math.PI * 2);
+        ctx.fillStyle = "rgba(30,30,28,.14)"; ctx.beginPath(); ctx.ellipse(wv * 0.0, ry, rx, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(25,25,22,.7)"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-rx * Math.cos(a), ry); ctx.lineTo(rx * Math.cos(a), ry); ctx.stroke();
       }
       ctx.restore();
     }
