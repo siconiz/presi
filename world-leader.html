@@ -96,7 +96,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .mapwrap canvas { display: block; width: 100%; height: clamp(320px, 40vw, 640px); max-height: 66vh; cursor: grab; touch-action: none; }
 .mapwrap canvas:active { cursor: grabbing; }
 .mapwrap canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.attrib { position: absolute; right: 10px; bottom: 6px; font-size: 10.5px; color: var(--muted); background: color-mix(in srgb, var(--sheet) 75%, transparent); padding: 1px 6px; border-radius: 3px; max-width: calc(100% - 20px); }
+.attrib { position: absolute; right: 10px; bottom: 6px; font-size: 10.5px; color: var(--muted); background: color-mix(in srgb, var(--sheet) 75%, transparent); padding: 1px 6px; border-radius: 3px; max-width: min(42%, 460px); line-height: 1.35; text-align: right; }
 .inspector { bottom: 30px; }
 .modes { position: absolute; left: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 90px); }
 .modes button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--sheet); font-size: 12.5px; font-weight: 600; opacity: .92; }
@@ -1352,8 +1352,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   EV.quiet = QUIET;
 
   // ───────── 지도 (Atlas 데이터: 지형 음영·주 경계·도시·강) ─────────
-  Object.assign(STR.ko, { m_pol: "정치", lg_pol: "국가별 색 · 금색 테두리가 우리나라", attrib: "지도: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0)", province: "주", population: "인구", mapLoading: "지도를 불러오는 중…", mapFail: "지도 자료를 불러오지 못했습니다. 게임은 지도 없이 진행됩니다." });
-  Object.assign(STR.en, { m_pol: "Political", lg_pol: "Country colours · gold edge is you", attrib: "Map: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0)", province: "Province", population: "Population", mapLoading: "Loading the map…", mapFail: "Could not load the map data. The game continues without the map." });
+  Object.assign(STR.ko, { m_pol: "정치", lg_pol: "국가별 색 · 금색 테두리가 우리나라", attrib: "지도: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0) · 확대 지형: Mapzen Terrain Tiles (USGS·NOAA 외, README)", province: "주", population: "인구", mapLoading: "지도를 불러오는 중…", mapFail: "지도 자료를 불러오지 못했습니다. 게임은 지도 없이 진행됩니다." });
+  Object.assign(STR.en, { m_pol: "Political", lg_pol: "Country colours · gold edge is you", attrib: "Map: Atlas · Natural Earth · NOAA ETOPO 2022 · GHS-POP R2023A (EC JRC, CC BY 4.0) · Zoom terrain: Mapzen Terrain Tiles (USGS, NOAA and others; see README)", province: "Province", population: "Population", mapLoading: "Loading the map…", mapFail: "Could not load the map data. The game continues without the map." });
   const MAPNAMES = {};
   // 남북한 주·도시 한국어 공식 명칭 (2026년 11월 기준). 광주·전남은 2026년 7월 1일 전남광주통합특별시로 통합
   const PROV_KO = {
@@ -1381,7 +1381,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
   const toLonLat = (x, y) => [view.cx + (x - MW / 2) / ppd(), view.cy - (y - MH / 2) / ppd()];
   function clampView() {
     const minZ = Math.max(1, MH / (140 * bScale()));
-    view.z = clamp(view.z, minZ, 14);
+    view.z = clamp(view.z, minZ, 30);
     const hw = MW / 2 / ppd(), hh = MH / 2 / ppd();
     view.cx = hw >= 180 ? 0 : clamp(view.cx, -180 + hw, 180 - hw);
     view.cy = hh >= 70 ? 10 : clamp(view.cy, -60 + hh, 80 - hh);
@@ -1414,6 +1414,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       ui.innerHTML = `<div class="modes" id="modes"></div><div class="zoom"><button data-zoom="1" aria-label="+">+</button><button data-zoom="-1" aria-label="−">−</button></div><div class="legend" id="legend"></div><div class="tip" id="tip" hidden></div><div class="inspector" id="insp" hidden></div><div class="attrib">${esc(t("attrib"))}</div>`;
       while (ui.firstChild) wrap.appendChild(ui.firstChild);
       mapReady = true;
+      buildSprites();
       if (G && G.war && G.war.length) { G.war.forEach(occupy); render(); }
       sizeMap();
       try { new ResizeObserver(() => { sizeMap(); }).observe(wrap); } catch { addEventListener("resize", sizeMap); }
@@ -1465,6 +1466,8 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       b.strokeStyle = "rgba(74,118,146,.55)"; b.lineWidth = rank <= 2 ? 2.2 : rank <= 4 ? 1.4 : 0.9; b.stroke();
     }
     AT.base = base;
+    AT.rivers = js.rivers.map(([rank, pts]) => { const b = [180, -90, -180, 90]; for (let i = 0; i < pts.length; i += 2) { b[0] = Math.min(b[0], pts[i]); b[2] = Math.max(b[2], pts[i]); b[1] = Math.max(b[1], pts[i + 1]); b[3] = Math.min(b[3], pts[i + 1]); } return { rank, pts, b: [b[0], b[1], b[2], b[3]] }; });
+    fetch("atlas/places.json").then((r) => r.ok ? r.json() : null).then((d) => { if (d) { AT.places = d; requestDraw(); } }).catch(() => {});
     // 주·국가 래스터와 경계선
     const pc = document.createElement("canvas");
     const pw = pidImg.naturalWidth, ph = pidImg.naturalHeight;
@@ -1613,8 +1616,271 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     return true;
   }
 
+  // ───────── 고해상도 지형 타일 (확대 시) ─────────
+  // atlas/hr/{gx}_{gy}.jpg: 16×8 타일, 각 22.5°×17.5°, 1°당 64픽셀. Terrarium(AWS) 고도 → 음영기복
+  const HR = { gx: 16, gy: 8, img: {} };
+  function hrTile(gx, gy) {
+    const k = gx + "_" + gy;
+    let im = HR.img[k];
+    if (!im) { im = HR.img[k] = new Image(); im.onload = () => requestDraw(); im.onerror = () => { im.bad = true; }; im.src = `atlas/hr/${k}.jpg`; }
+    return im.complete && im.naturalWidth && !im.bad ? im : null;
+  }
+  function drawHiRes(P) {
+    const [lonL, latT] = toLonLat(0, 0), [lonR, latB] = toLonLat(MW, MH);
+    const tw = 360 / HR.gx, th = 140 / HR.gy;
+    let drawn = 0;
+    for (let gy = Math.max(0, Math.floor((80 - latT) / th)); gy <= Math.min(HR.gy - 1, Math.floor((80 - latB) / th)); gy++)
+      for (let gx = Math.max(0, Math.floor((lonL + 180) / tw)); gx <= Math.min(HR.gx - 1, Math.floor((lonR + 180) / tw)); gx++) {
+        const im = hrTile(gx, gy);
+        if (!im) continue;
+        const [x, y] = toScreen(-180 + gx * tw, 80 - gy * th);
+        ctx.drawImage(im, x, y, tw * P + 0.6, th * P + 0.6);
+        drawn++;
+      }
+    return drawn;
+  }
+  function drawRivers(P, dark) {
+    const [lonL, latT] = toLonLat(0, 0), [lonR, latB] = toLonLat(MW, MH);
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.strokeStyle = dark ? "rgba(70,110,135,.7)" : "rgba(74,118,146,.62)";
+    for (const r of AT.rivers || []) {
+      if (r.b[2] < lonL || r.b[0] > lonR || r.b[1] < latB || r.b[3] > latT) continue;
+      ctx.lineWidth = clamp(P * (r.rank <= 2 ? 0.05 : r.rank <= 4 ? 0.032 : 0.02), 0.8, 4);
+      ctx.beginPath();
+      for (let i = 0; i < r.pts.length; i += 2) { const [x, y] = toScreen(r.pts[i], r.pts[i + 1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+    }
+  }
+  // 마을·산·공항·항구 (Natural Earth). 순위가 높은 것부터, 자리가 있을 때만
+  function drawPlaces(z, P, ink, halo, free, dark) {
+    const PL = AT.places;
+    if (!PL || z < 4) return;
+    const lab = (en, ko) => (LANG === "ko" && ko) ? ko : en;
+    const inView = (x, y) => x > -20 && y > -20 && x < MW + 20 && y < MH + 20;
+    ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    const label = (txt, x, y, font, col) => {
+      ctx.font = font; const tw = ctx.measureText(txt).width;
+      if (!free(x - 3, y - 7, tw + 10, 14)) return false;
+      ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(txt, x + 5, y); ctx.fillStyle = col; ctx.fillText(txt, x + 5, y);
+      return true;
+    };
+    const tz = (r) => r <= 3 ? 4 : r <= 5 ? 5.5 : r <= 7 ? 7.5 : 10;
+    for (const [lon, lat, r, en, ko] of PL.towns) {
+      if (tz(r) > z) break;
+      const [x, y] = toScreen(lon, lat);
+      if (!inView(x, y)) continue;
+      if (!label(lab(en, ko), x, y, `italic ${r <= 5 ? 12 : 11}px "IM Fell English", "Gowun Batang", serif`, ink)) continue;
+      ctx.beginPath(); ctx.arc(x, y, r <= 5 ? 2.4 : 1.8, 0, Math.PI * 2); ctx.fillStyle = ink; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = halo; ctx.stroke();
+    }
+    if (z >= 5) for (const [lon, lat, , en, ko, elev, volc] of PL.peaks) {
+      const [x, y] = toScreen(lon, lat);
+      if (!inView(x, y)) continue;
+      const txt = lab(en, ko) + (z >= 7 && elev ? ` ${elev.toLocaleString()}m` : "");
+      if (!label(txt, x + 2, y, `italic 11px "IM Fell English", "Gowun Batang", serif`, dark ? "#d9c3a0" : "#5b4128")) continue;
+      ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 5, y + 3.5); ctx.lineTo(x - 5, y + 3.5); ctx.closePath();
+      ctx.fillStyle = volc ? "#9c3b22" : dark ? "#b89a74" : "#6e5236"; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = halo; ctx.stroke();
+    }
+    if (z >= 6) for (const [lon, lat, r, en, ko, mil] of PL.airports) {
+      if (r > 6 && z < 8) continue;
+      const [x, y] = toScreen(lon, lat);
+      if (!inView(x, y)) continue;
+      const txt = z >= 8 ? lab(en, ko) : "";
+      if (!free(x - 6, y - 6, 12, 12)) continue;
+      if (txt) label(txt, x + 3, y, `10.5px "IBM Plex Sans KR", sans-serif`, mil ? "#8a2f2a" : ink);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 4); ctx.fillStyle = mil ? "#8a2f2a" : dark ? "#cfd6da" : "#2f3a44";
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(1.2, -1.5); ctx.lineTo(6, 1); ctx.lineTo(6, 2.2); ctx.lineTo(1.2, 1); ctx.lineTo(1, 4); ctx.lineTo(2.6, 5.4); ctx.lineTo(2.6, 6.2); ctx.lineTo(0, 5.4); ctx.lineTo(-2.6, 6.2); ctx.lineTo(-2.6, 5.4); ctx.lineTo(-1, 4); ctx.lineTo(-1.2, 1); ctx.lineTo(-6, 2.2); ctx.lineTo(-6, 1); ctx.lineTo(-1.2, -1.5); ctx.closePath();
+      ctx.fill(); ctx.restore();
+    }
+    if (z >= 7) for (const [lon, lat, r, en] of PL.ports) {
+      if (r > 7 && z < 9) continue;
+      const [x, y] = toScreen(lon, lat);
+      if (!inView(x, y) || !free(x - 6, y - 6, 12, 12)) continue;
+      if (z >= 9) label(en, x + 3, y, `italic 10.5px "IM Fell English", serif`, dark ? "#9cc3d6" : "#2b5470");
+      ctx.strokeStyle = dark ? "#9cc3d6" : "#2b5470"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(x, y - 4, 1.6, 0, Math.PI * 2); ctx.moveTo(x, y - 2.4); ctx.lineTo(x, y + 4); ctx.moveTo(x - 3, y - 0.5); ctx.lineTo(x + 3, y - 0.5);
+      ctx.moveTo(x - 4, y + 1.5); ctx.quadraticCurveTo(x - 3, y + 4.5, x, y + 4.5); ctx.quadraticCurveTo(x + 3, y + 4.5, x + 4, y + 1.5); ctx.stroke();
+    }
+  }
+
+  // ───────── 전투 부대 표시 (편제 기반) ─────────
+  // 편제 비율 [보병, 기갑, 헬기, 항공]. 표에 있는 나라는 손으로 정한 근사치, 나머지는 군사력·경제로 산출(추정)
+  const FORCE = { USA: [0.33, 0.25, 0.15, 0.27], RUS: [0.42, 0.3, 0.1, 0.18], CHN: [0.4, 0.27, 0.1, 0.23], KOR: [0.45, 0.28, 0.1, 0.17], PRK: [0.62, 0.25, 0.03, 0.1], ISR: [0.35, 0.25, 0.1, 0.3], UKR: [0.55, 0.25, 0.08, 0.12], IND: [0.5, 0.25, 0.08, 0.17], PAK: [0.55, 0.25, 0.07, 0.13], TWN: [0.45, 0.25, 0.1, 0.2], JPN: [0.4, 0.2, 0.15, 0.25] };
+  function forceOf(iso, tac) {
+    const c = C[iso], m = milOf(iso), r = c.ec / 100;
+    let [inf, arm, heli, air] = FORCE[iso] || [0, 0.2 + 0.1 * m / 100, 0.04 + 0.07 * r, 0.07 + 0.14 * r];
+    if (!FORCE[iso]) inf = 1 - arm - heli - air;
+    const off = TAC[tac]?.o === "adv";
+    arm *= off ? 1.3 : 0.9; heli *= off ? 1.2 : 1; inf *= off ? 1 : 1.3;
+    const n = clamp(Math.round(4 + m / 9), 4, 15), sh = [inf, arm, heli, air], tot = sh.reduce((a, b) => a + b, 0);
+    const cnt = sh.map((v) => Math.floor(v / tot * n));
+    const rem = n - cnt.reduce((a, b) => a + b, 0);
+    sh.map((v, i) => [v / tot * n - cnt[i], i]).sort((a, b) => b[0] - a[0]).slice(0, rem).forEach(([, i]) => cnt[i]++);
+    return ["inf", "arm", "heli", "air"].flatMap((k, i) => Array(cnt[i]).fill(k));
+  }
+  // 프롭 스프라이트: 측면 전차·보병·공격헬기, 상면 전투기. 색은 진영별 위장색
+  const CAMO = { me: ["#8e9a5b", "#5f6b34", "#3d4721", "#1b2010"], foe: ["#9a917a", "#6b6452", "#47422f", "#201d14"] };
+  const JETC = { me: ["#b3bbc0", "#6b757c", "#262b2e"], foe: ["#a8a197", "#5f5a52", "#26231f"] };
+  const SVG = {
+    arm: ([L, M, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.55' stop-color='${M}'/><stop offset='1' stop-color='${D}'/></linearGradient><linearGradient id='w' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#5d5d55'/><stop offset='1' stop-color='#222220'/></linearGradient></defs>
+      <path d='M9 41h102l-7 13H17z' fill='#1e1e1b'/><g fill='url(#w)' stroke='#161614' stroke-width='1'><circle cx='14' cy='45' r='4.2'/><circle cx='24' cy='47.5' r='6'/><circle cx='37' cy='47.5' r='6'/><circle cx='50' cy='47.5' r='6'/><circle cx='63' cy='47.5' r='6'/><circle cx='76' cy='47.5' r='6'/><circle cx='89' cy='47.5' r='6'/><circle cx='102' cy='46' r='5'/></g>
+      <g fill='#8d8d84'><circle cx='24' cy='47.5' r='1.8'/><circle cx='37' cy='47.5' r='1.8'/><circle cx='50' cy='47.5' r='1.8'/><circle cx='63' cy='47.5' r='1.8'/><circle cx='76' cy='47.5' r='1.8'/><circle cx='89' cy='47.5' r='1.8'/></g>
+      <path d='M8 40 L18 31 H100 L114 36 L112 42 H8 Z' fill='url(#g)' stroke='${K}'/><path d='M15 37 H107 V44 H15 Z' fill='${M}' stroke='${K}' stroke-width='.8'/><path d='M30 37v7M45 37v7M60 37v7M75 37v7M90 37v7' stroke='${K}' stroke-opacity='.45'/>
+      <path d='M30 31 L36 21 Q40 18 46 18 H78 L92 23 L94 31 Z' fill='url(#g)' stroke='${K}'/><rect x='23' y='22' width='9' height='8' fill='${D}' stroke='${K}' stroke-width='.6'/>
+      <path d='M92 23.4 H116 V26.6 H92 Z' fill='${D}' stroke='${K}' stroke-width='.6'/><rect x='111' y='22.3' width='6.5' height='5.4' rx='.8' fill='${K}'/><rect x='48' y='14.5' width='10' height='4' rx='1' fill='${D}' stroke='${K}' stroke-width='.6'/><path d='M60 15 L71 13' stroke='${K}' stroke-width='1.3'/>
+      <path d='M40 25 q6 -4 12 0 t10 2 v4 h-22z' fill='${D}' opacity='.38'/><path d='M20 34 q8 -3 16 0 v3 h-16z' fill='${D}' opacity='.3'/><path d='M70 33 q8 -4 18 0 v4 h-18z' fill='${D}' opacity='.3'/><path d='M19 32 H99' stroke='#fff' stroke-opacity='.25'/></svg>`,
+    inf: ([L, M, D, K]) => {
+      const man = (x, s, kneel) => `<g transform='translate(${x} ${kneel ? 6 : 0}) scale(${s})'><path d='${kneel ? "M11 47 L16 40 L22 47 M16 40 L12 48" : "M10 54 L14 40 L18 54"}' stroke='${D}' stroke-width='3.4' fill='none' stroke-linecap='round'/><rect x='10' y='24' width='9' height='17' rx='3' fill='url(#g)' stroke='${K}' stroke-width='.6'/><rect x='6.4' y='26' width='5' height='11' rx='1.5' fill='${D}' stroke='${K}' stroke-width='.4'/><circle cx='15' cy='19' r='3.4' fill='#c49d7a'/><path d='M10.7 18.6 Q15 11.2 19.5 18.6 Z' fill='${D}' stroke='${K}' stroke-width='.6'/><path d='M12 31 L26 27.5' stroke='#1d1d1b' stroke-width='2.3' stroke-linecap='round'/><path d='M16 29 L22 30.5' stroke='${M}' stroke-width='3' stroke-linecap='round'/></g>`;
+      return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='1' stop-color='${D}'/></linearGradient></defs>${man(0, 1, false)}${man(20, 0.95, true)}${man(38, 1, false)}</svg>`;
+    },
+    heli: ([L, M, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 60'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.6' stop-color='${M}'/><stop offset='1' stop-color='${D}'/></linearGradient><linearGradient id='gl' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#cfe3ea'/><stop offset='1' stop-color='#3f5560'/></linearGradient></defs>
+      <path d='M32 28 L5 25 V29.5 L32 34.5 Z' fill='${M}' stroke='${K}'/><path d='M7 25 L3 11 H8 L12 25 Z' fill='${D}' stroke='${K}'/><circle cx='5.5' cy='15' r='6.5' fill='${K}' opacity='.16'/>
+      <path d='M30 30 Q34 22 52 21 H74 Q92 22 99 30 Q101 36 92 39.5 H46 Q34 39.5 30 34 Z' fill='url(#g)' stroke='${K}'/><path d='M76 23 Q90 24 96.5 31 H80 Z' fill='url(#gl)' stroke='${K}' stroke-width='.6'/><path d='M62 22 Q72 22 76 27 L66 28 Z' fill='url(#gl)' stroke='${K}' stroke-width='.6'/>
+      <rect x='51' y='15.5' width='23' height='6.5' rx='3' fill='${D}' stroke='${K}'/><rect x='61' y='10' width='3' height='6' fill='${K}'/><rect x='49' y='33' width='24' height='3' fill='${D}'/><rect x='53' y='36' width='15' height='5' rx='2.2' fill='#2b2b28'/>
+      <path d='M88 39 L99 41.5' stroke='#1d1d1b' stroke-width='2'/><circle cx='50' cy='43.5' r='2.3' fill='#1d1d1b'/><circle cx='86' cy='42.5' r='2.3' fill='#1d1d1b'/><path d='M36 27 H94' stroke='#fff' stroke-opacity='.22'/></svg>`,
+    air: ([L, D, K]) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><defs><linearGradient id='j' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${L}'/><stop offset='.5' stop-color='${D}'/><stop offset='1' stop-color='${L}'/></linearGradient><linearGradient id='gl' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#3a4f5a'/><stop offset='1' stop-color='#cfe6ef'/></linearGradient></defs>
+      <path d='M58 33 L40 5 L32 5 L38 33 Z M58 37 L40 65 L32 65 L38 37 Z' fill='${D}' stroke='${K}' stroke-width='.8'/><path d='M22 32 L11 19 H6 L12 32 Z M22 38 L11 51 H6 L12 38 Z' fill='${D}' stroke='${K}' stroke-width='.8'/>
+      <path d='M6 35 Q10 31 30 30.5 L80 32 Q94 34 99 35 Q94 36 80 38 L30 39.5 Q10 39 6 35 Z' fill='url(#j)' stroke='${K}' stroke-width='.8'/><ellipse cx='79' cy='35' rx='8.5' ry='2.7' fill='url(#gl)'/><rect x='3' y='32.5' width='5' height='5' rx='1' fill='#2a2a2a'/><path d='M40 10 L36 10' stroke='${K}'/></svg>`,
+  };
+  const SPR = {};
+  function buildSprites() {
+    for (const side of ["me", "foe"]) for (const k of ["arm", "inf", "heli", "air"]) {
+      const im = new Image();
+      im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(SVG[k](k === "air" ? JETC[side] : CAMO[side]));
+      SPR[k + side] = im;
+    }
+  }
+  const WGEO = new WeakMap();
+  // 전선 기하: 두 나라 국경 픽셀(없으면 가장 가까운 주 사이 중점), 진격 방향, 깊이
+  function warGeo(w) {
+    if (WGEO.has(w)) return WGEO.get(w);
+    const me = AT.isoToC[G.iso], fo = AT.isoToC[w.foe];
+    if (!me || !fo) return null;
+    const a = me.id, b = fo.id, cty = AT.cty, pw = AT.pw, ph = AT.ph, pts = [];
+    for (let i = pw; i < pw * (ph - 1); i++) if (cty[i] === a && (cty[i + 1] === b || cty[i - 1] === b || cty[i + pw] === b || cty[i - pw] === b) && Math.random() < 0.5)
+      pts.push([(i % pw + 0.5) / pw * 360 - 180, 80 - (Math.floor(i / pw) + 0.5) / ph * 140]);
+    const cap = (c) => c.cap || (c.lp && c.lp[Math.floor(c.lp.length / 2)]) || [0, 0];
+    if (!pts.length) {
+      if (!w.ordF) occupy(w);
+      const pa = AT.prov[(w.ordM || [])[0]?.[0]], pb = AT.prov[(w.ordF || [])[0]?.[0]];
+      const A = pa ? [pa.lon, pa.lat] : cap(me), B = pb ? [pb.lon, pb.lat] : cap(fo);
+      for (let k = -3; k <= 3; k++) pts.push([(A[0] + B[0]) / 2 + k * 0.25, (A[1] + B[1]) / 2 - k * 0.15]);
+    }
+    const A = cap(me), B = cap(fo), kx = Math.cos(((A[1] + B[1]) / 2) * Math.PI / 180);
+    let dx = (B[0] - A[0]) * kx, dy = B[1] - A[1];
+    const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+    const px = -dy, py = dx, proj = (p) => p[0] * kx * px + p[1] * py;
+    pts.sort((p, q) => proj(p) - proj(q));
+    const n = Math.min(14, pts.length), samp = Array.from({ length: n }, (_, i) => pts[Math.floor((i + 0.5) / n * pts.length)]);
+    const g = { pts: samp, dx, dy, px, py, kx, depth: clamp(len * 0.45, 0.8, 6) };
+    WGEO.set(w, g);
+    return g;
+  }
+  const hash = (i) => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  // 부대·폭발을 그린다. 그린 것이 있으면 true (애니메이션 계속)
+  function drawUnits(now) {
+    if (!G || !G.war || !G.war.length || view.z < 3 || G.phase === "over") return false;
+    const t = now / 1000, S = clamp(ppd() * 0.5, 16, 46);
+    const items = [];
+    let any = false;
+    for (const w of G.war) {
+      const g = warGeo(w);
+      if (!g || !g.pts.length) continue;
+      any = true;
+      const advMe = Math.max(0, w.front) / 100 * g.depth, advFoe = Math.max(0, -w.front) / 100 * g.depth;
+      const at = (p, along, side) => { const lon = p[0] + (g.dx * along + g.px * side) / g.kx, lat = p[1] + g.dy * along + g.py * side; return toScreen(lon, lat); };
+      for (const mine of [true, false]) {
+        const units = forceOf(mine ? G.iso : w.foe, mine ? w.tac : w.ft), sgn = mine ? -1 : 1, base = advMe - advFoe;
+        const col = mine ? tok("--me") : tok("--r-hostile");
+        units.forEach((k, i) => {
+          const h = hash(i + (mine ? 0 : 50) + w.foe.charCodeAt(0));
+          const p = g.pts[(i * 5 + (mine ? 0 : 3)) % g.pts.length];
+          const row = k === "arm" ? (TAC[mine ? w.tac : w.ft]?.o === "adv" ? 0.3 : 0.5) : k === "inf" ? 0.36 : k === "heli" ? 0.85 : 1.2;
+          const along = base + sgn * (row + h * 0.18), side = (h - 0.5) * 0.45;
+          let [x, y] = at(p, along, side);
+          if (k === "air") { // 전선 위를 타원 궤도로 선회
+            const a = t * 0.35 + h * 6.28, pos = (b) => at(p, base + sgn * 0.7 + Math.cos(b) * 0.35, Math.sin(b) * 0.9);
+            const [ax, ay] = pos(a), [nx, ny] = pos(a + 0.02);
+            items.push({ k, mine, x: ax, y: ay, rot: Math.atan2(ny - ay, nx - ax), col, z: 1e6 + ay });
+            return;
+          }
+          if (k === "heli") y -= 10 + Math.sin(t * 2.2 + h * 9) * 2.5;
+          const face = (g.dx * (mine ? 1 : -1)) >= 0;
+          items.push({ k, mine, x, y, face, col, z: y, h });
+        });
+      }
+      // 폭발·연기: 현재 전선 위
+      for (let e = 0; e < 5; e++) {
+        const cyc = t * 0.55 + e * 0.37, f = cyc - Math.floor(cyc), id = Math.floor(cyc) * 7 + e;
+        const p = g.pts[Math.floor(hash(id) * g.pts.length)];
+        const [x, y] = at(p, advMe - advFoe + (hash(id + 3) - 0.5) * 0.15, (hash(id + 5) - 0.5) * 0.3);
+        items.push({ k: "fx", x, y, f, z: y + 0.5 });
+      }
+    }
+    items.sort((a, b) => a.z - b.z);
+    for (const u of items) {
+      if (u.k === "fx") { drawBlast(u.x, u.y, u.f, S); continue; }
+      const im = SPR[u.k + (u.mine ? "me" : "foe")];
+      if (!im || !im.complete || !im.naturalWidth) continue;
+      if (u.k === "air") {
+        const s = S * 1.05;
+        ctx.save(); ctx.translate(u.x + 9, u.y + 14); ctx.rotate(u.rot); ctx.globalAlpha = 0.22; ctx.filter = "brightness(0)"; ctx.drawImage(im, -s / 2, -s * 0.35, s, s * 0.7); ctx.restore();
+        ctx.save(); ctx.translate(u.x, u.y); ctx.rotate(u.rot); ctx.drawImage(im, -s / 2, -s * 0.35, s, s * 0.7);
+        ctx.fillStyle = `rgb(${u.col})`; ctx.beginPath(); ctx.arc(-s * 0.05, -s * 0.22, 2.2, 0, Math.PI * 2); ctx.arc(-s * 0.05, s * 0.22, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        continue;
+      }
+      const wv = u.k === "arm" ? S : u.k === "heli" ? S * 1.15 : S * 0.72, hv = u.k === "arm" ? wv * 0.5 : u.k === "heli" ? wv * 0.46 : wv * 0.94;
+      ctx.save(); ctx.translate(u.x, u.y);
+      if (u.k !== "heli") { ctx.fillStyle = `rgba(${u.col},.55)`; ctx.strokeStyle = `rgba(${u.col},.95)`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(0, hv * 0.42, wv * 0.5, hv * 0.16, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      else { ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(0, hv * 0.9 + 12, wv * 0.35, hv * 0.12, 0, 0, Math.PI * 2); ctx.fill(); }
+      if (!u.face) ctx.scale(-1, 1);
+      ctx.drawImage(im, -wv / 2, -hv / 2, wv, hv);
+      if (u.k === "heli") { // 주 회전익: 반투명 원반 + 도는 날개
+        const ry = -hv * 0.36, rx = wv * 0.52, a = (performance.now() / 40) % (Math.PI * 2);
+        ctx.fillStyle = "rgba(30,30,28,.14)"; ctx.beginPath(); ctx.ellipse(wv * 0.0, ry, rx, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(25,25,22,.7)"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-rx * Math.cos(a), ry); ctx.lineTo(rx * Math.cos(a), ry); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    return any;
+  }
+  function drawBlast(x, y, f, S) {
+    const r = S * (0.15 + f * 0.6);
+    if (f < 0.25) {
+      const gr = ctx.createRadialGradient(x, y, 0, x, y, r * 1.2);
+      gr.addColorStop(0, `rgba(255,244,200,${0.95 - f * 3})`); gr.addColorStop(0.4, `rgba(255,150,40,${0.8 - f * 3})`); gr.addColorStop(1, "rgba(255,90,20,0)");
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r * 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+    const a = 0.45 * (1 - f);
+    for (let k = 0; k < 3; k++) {
+      const sx = x + (k - 1) * r * 0.45, sy = y - f * S * 0.7 - k * r * 0.2, sr = r * (0.55 + k * 0.15);
+      const gs = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+      gs.addColorStop(0, `rgba(70,66,60,${a})`); gs.addColorStop(1, "rgba(70,66,60,0)");
+      ctx.fillStyle = gs; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // 정적 지도(캔버스 캐시) + 움직이는 부대 레이어
+  let sc = null, sctx = null, unitsOn = false, lastFrame = 0;
   function drawMap() {
     if (!mapReady || !ctx) return;
+    if (!sc) { sc = document.createElement("canvas"); sctx = sc.getContext("2d"); }
+    if (sc.width !== cv.width || sc.height !== cv.height) { sc.width = cv.width; sc.height = cv.height; }
+    const real = ctx; ctx = sctx;
+    try { drawStatic(); } finally { ctx = real; }
+    drawFrame(performance.now());
+  }
+  function drawFrame(now) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(sc, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const on = drawUnits(now);
+    if (on && !unitsOn && !reduceMotion()) { unitsOn = true; requestAnimationFrame(tick); }
+    return on;
+  }
+  function tick(now) {
+    if (!unitsOn) return;
+    if (now - lastFrame > 33) { lastFrame = now; if (!drawFrame(now)) { unitsOn = false; return; } }
+    requestAnimationFrame(tick);
+  }
+  function drawStatic() {
     rebuildPolitical();
     const dark = isDark();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1623,8 +1889,10 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     if (dark) ctx.filter = "brightness(.58) saturate(.8)";
     ctx.drawImage(AT.base, x0, y0, ww, hh);
+    const hiRes = ppd() * dpr > 15 && drawHiRes(ppd()) > 0;   // 확대하면 1°당 64픽셀 지형 타일
     ctx.filter = "none";
-    ctx.globalAlpha = dark ? 0.82 : 0.9;
+    if (hiRes) drawRivers(ppd(), dark);
+    ctx.globalAlpha = (dark ? 0.82 : 0.9) * (view.z > 3 ? clamp(1 - (view.z - 3) / 14, 0.62, 1) : 1); // 확대할수록 지형이 비치게
     ctx.drawImage(AT.pol, x0, y0, ww, hh);
     ctx.globalAlpha = 1;
     const ink = dark ? "rgba(236,232,220,.92)" : "rgba(52,40,28,.88)", halo = dark ? "rgba(10,14,18,.75)" : "rgba(244,239,226,.8)";
@@ -1710,6 +1978,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
       }
     }
     drawCities(false);
+    drawPlaces(z, P, ink, halo, free, dark);
   }
 
   // 조작
