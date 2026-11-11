@@ -13,7 +13,7 @@
 - 재난·사고: 지진·태풍·홍수·폭염과 여객선 침몰·인파 밀집·건물 붕괴·화재·폭발이 확률적으로 일어납니다. 자연재해 발생은 국가 태그와 계절, 지진 규모는 구텐베르크-리히터 분포(b≈1)를 따르고, 사망자는 소득·제도·부패 수준으로 달라집니다. 인재는 '안전 제도' 지수(자유도·경제·정치 안정, 비리, 안전 개혁)가 낮을수록 자주 일어납니다. 실제 참사를 재현하지 않고 같은 유형의 가상 사건으로 다룹니다.
 - Victoria 스타일 지도: 지형 음영, 주(州) 경계, 곡선 국가명, 도시, 강. 남북한 주와 도시는 한국어 공식 명칭으로 표시하고, 광주·전남은 2026년 7월 출범한 전남광주통합특별시로 합쳐 표시합니다.
 - 확대 지도: 30배까지 확대하면 1°당 64픽셀 음영기복 지형, 강, 마을, 산 정상(▲), 공항(✈, 군 공항은 붉은색), 항구(⚓)가 순서대로 나타납니다.
-- 전투 부대: 전쟁 중 확대하면 양측 편제(보병·기갑·공격헬기·전투기 비율)에 맞춘 전차·보병 분대·헬기·전투기가 전선에 배치되고, 전진·후퇴와 전술(공세·방어)에 따라 위치가 바뀝니다. 헬기는 회전익이 돌고, 전투기는 전선 위를 선회하며, 전선에는 포연이 오릅니다.
+- 전투 부대: 전쟁 중 확대하면 양측 편제(보병·기갑·공격헬기·전투기 비율)에 맞춘 전차·보병 분대·헬기·전투기(3D 모델 렌더링)가 전선에 배치되고, 전진·후퇴와 전술(공세·방어)에 따라 위치가 바뀝니다. 헬기는 회전익이 돌고, 전투기는 전선 위를 선회하며, 전선에는 포연이 오릅니다.
 - HOI식 도시 거점: 확대할수록 작은 도시까지 나오고, 도시마다 승점(VP)이 붙습니다. 점령된 도시는 점령국 색으로 바뀌고, 빼앗긴 승점 비율만큼 전쟁 지지도가 깎입니다.
 
 ## 파일
@@ -63,6 +63,7 @@ python -m http.server 8000
   - New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government
   - Norway terrain data © Kartverket
   - United Kingdom terrain data © Environment Agency copyright and/or database right 2015
+- 전투 부대 스프라이트(`atlas/units/`): 무료 3D 모델을 진영별로 칠해 three.js로 미리 렌더링한 PNG입니다. 전차는 [GTA_SZ](https://github.com/linranff/GTA_SZ)(MIT), 전투기 F-16·헬기는 munim-maps-vehicles(Apache-2.0), 보병은 Mixamo의 'Vanguard' 병사입니다. 자세한 출처와 라이선스 전문은 `atlas/units/LICENSES.md`.
 - 마을·공항·항구·산(`atlas/places.json`): Natural Earth 10m (public domain). 한국어 이름은 Natural Earth의 `name_ko`를 쓰되 확인된 오류(평산·장연·지리산·개성)는 고쳤습니다.
 - 지도 글꼴: IM Fell English (SIL OFL 1.1, Google Fonts)
 
