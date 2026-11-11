@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>세계 지도자 5년</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,6 +93,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, label:focus-wit
 .segs i.elect { box-shadow: inset 0 -3px 0 var(--warn); }
 .lang { display: flex; flex-direction: column; gap: 3px; }
 .lang select { padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--sheet); font-size: 13px; }
+.visits { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 .lang-note { font-size: 11.5px; color: var(--muted); max-width: 220px; line-height: 1.35; }
 
 /* 지도 */
@@ -3428,6 +3433,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     lb_empty: "아직 기록이 없습니다. 첫 기록의 주인공이 되어 보세요.", lb_loading: "리더보드를 불러오는 중…",
     lb_off: "공유 리더보드를 쓸 수 없어 이 브라우저에 저장된 내 기록만 보여줍니다.", lb_noWrite: "이 보기 권한으로는 공유 리더보드에 등록할 수 없어 이 브라우저에만 저장했어요.",
     lb_saved: "리더보드에 등록했어요.", lb_savedLocal: "이 브라우저에만 저장했어요.", lb_saving: "리더보드에 등록하는 중…", lb_failed: "등록하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    vis: "오늘 방문 {a} · 누적 {b}",
     lb_me: "나", lb_someone: "이름 없는 플레이어", lb_note: "사람마다 최고 기록 하나만 올라갑니다. 지도자 이름은 게임 속 가상 이름입니다.", lb_retry: "다시 등록",
   });
   Object.assign(STR.en, {
@@ -3439,6 +3445,7 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     lb_empty: "No records yet. Be the first on the board.", lb_loading: "Loading the leaderboard…",
     lb_off: "The shared leaderboard is unavailable, so only your records in this browser are shown.", lb_noWrite: "Your access level can't post to the shared leaderboard, so this run was saved in this browser only.",
     lb_saved: "Posted to the leaderboard.", lb_savedLocal: "Saved in this browser only.", lb_saving: "Posting to the leaderboard…", lb_failed: "Couldn't post. Try again in a moment.",
+    vis: "Today {a} · Total {b}",
     lb_me: "You", lb_someone: "Unnamed player", lb_note: "Each person's best run is listed once. Leader names are fictional in-game names.", lb_retry: "Post again",
   });
 
@@ -3542,6 +3549,25 @@ MDG|MG|마다가스카르|P|5|SSA|N|40,25,55,30,35,56,55|storm drought`;
     } finally { LB.busy = false; renderLB(); }
   }
   const num = (n) => Number(n || 0).toLocaleString(LANG === "ko" ? "ko-KR" : "en-US");
+  // 방문자 수: 브라우저당 하루 1회(한국 시간 기준). 아티팩트에서는 공유 DB, 그 밖(GitHub Pages 등)에서는 counterapi.dev
+  const VIS = { today: null, total: null };
+  const VIS_NS = "siconiz-presi-world-leader";
+  const seoulDay = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  async function initVisits() {
+    const day = seoulDay(), key = "visit:" + day, fresh = !store.get(key);
+    try {
+      if (LB.db) {
+        const read = async (id) => { const ref = LB.db.doc("visits/" + id), snap = await ref.get(); let n = snap.exists ? (snap.data().n || 0) : 0; if (fresh) { n += 1; await ref.set({ n }); } return n; };
+        [VIS.total, VIS.today] = await Promise.all([read("total"), read("d" + day)]);
+      } else {
+        const hit = (name) => fetch(`https://api.counterapi.dev/v1/${VIS_NS}/${name}/${fresh ? "up" : ""}`).then((r) => r.ok ? r.json() : Promise.reject(r.status)).then((j) => Number(j.count ?? j.value ?? 0));
+        [VIS.total, VIS.today] = await Promise.all([hit("total"), hit("d" + day.replace(/-/g, ""))]);
+      }
+      if (fresh) store.set(key, 1);
+    } catch { VIS.today = VIS.total = null; }
+    render();
+  }
+  const visView = () => VIS.total == null ? "" : `<span class="visits">${t("vis", { a: num(VIS.today), b: num(VIS.total) })}</span>`;
   function lbRows() {
     const k = LB.tab;
     const pickRun = (r) => k === "gov" ? (r.bestGov || r.best) : k === "greed" ? (r.bestGreed || r.best) : r.best;
@@ -3756,7 +3782,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
   }).join("") + (rels || []).map(([iso, v]) => `<span class="chip ${v > 0 ? "up" : "down"}">${flag(C[iso].iso2)} ${esc(cname(iso))} ${v > 0 ? "+" : "−"}${Math.abs(v)}</span>`).join("");
 
   function topView() {
-    const langSel = `<label class="lang"><span class="label">${t("lang")}</span><select id="langsel">${LANGS.map(([k, n]) => `<option value="${k}" ${k === LANG ? "selected" : ""}>${n}</option>`).join("")}</select>${LANG !== "ko" ? `<span class="lang-note">${sampleState === "off" ? t("langOff") : pending.size ? t("translating") : t("langNote")}</span>` : ""}</label>`;
+    const langSel = `<label class="lang"><span class="label">${t("lang")}</span><select id="langsel">${LANGS.map(([k, n]) => `<option value="${k}" ${k === LANG ? "selected" : ""}>${n}</option>`).join("")}</select>${LANG !== "ko" ? `<span class="lang-note">${sampleState === "off" ? t("langOff") : pending.size ? t("translating") : t("langNote")}</span>` : ""}${visView()}</label>`;
     if (!G) return `<header class="top"><h1><span><small>${t("sub")}</small>${t("app")}</span></h1><div class="top-right">${langSel}</div></header>`;
     const c = C[G.iso];
     const born = G.origin !== G.iso ? ` · ${t("bornIn", { O: esc(cname(G.origin)) })}` : "";
@@ -4055,7 +4081,7 @@ Reply with only a JSON array of objects {"name": display name, "handle": latin h
     if (LANG !== "ko") { ensureUiTr(); if (G && G.phase !== "over") ensureEventTr(EV[G.cur]); }
     renderAll();
   })();
-  initLeaderboard();
+  initLeaderboard().finally(initVisits);
   window.claude?.hot?.snapshot?.(() => ({ G, draft }));
   window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 })();

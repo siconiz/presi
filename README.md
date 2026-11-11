@@ -30,6 +30,10 @@
 
 ## 실행
 
+공개 저장소에서 GitHub Pages를 켜면 `https://siconiz.github.io/presi/`에서 바로 플레이할 수 있습니다(`index.html`이 `world-leader.html`로 넘겨 줍니다).
+화면 오른쪽 위에 오늘 방문자와 누적 방문자가 표시됩니다. 브라우저마다 하루 한 번(한국 시간 기준) 세며, Claude 아티팩트에서는 공유 DB, 그 밖에서는 [counterapi.dev](https://counterapi.dev/)를 씁니다.
+
+
 `world-leader.html`은 같은 폴더의 `atlas/` 파일을 `fetch`로 읽으므로, 파일을 직접 여는 대신 로컬 서버로 여세요.
 
 ```bash
