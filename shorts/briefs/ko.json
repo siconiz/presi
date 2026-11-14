@@ -1,0 +1,15 @@
+{
+  "lang": "ko",
+  "title": "세계 지도자 5년",
+  "game_url": "siconiz.github.io/presi",
+  "concept": "실제 167개국 중 하나를 골라 5년 동안 나라를 운영하는 브라우저 게임",
+  "required_text": "무료 · 설치 없이 브라우저에서 바로",
+  "scenes": [
+    { "view": "", "focus": "#mapwrap", "caption": "내가 대통령이라면?\n5년 버틸 수 있을까", "sec": 3.5 },
+    { "view": "", "focus": ".setup", "caption": "실제 167개국 중\n아무 나라나 골라서", "sec": 3, "max_h": 700 },
+    { "view": "#demo", "focus": ".board", "caption": "지지율·경제·안보\n전부 실제 수치로 시작", "sec": 3 },
+    { "view": "#demo", "focus": ".doc", "caption": "비리가 터졌다\n덮을까, 사과할까", "sec": 3.5 },
+    { "view": "#democamp", "focus": ".board", "caption": "평당원에서 시작해\n경선·선거로 권좌까지", "sec": 3 },
+    { "view": "#demoend", "focus": ".ending", "caption": "임기 끝나면 성적표\n구속? 망명? 무사 퇴임?", "sec": 3.5, "max_h": 640 }
+  ]
+}

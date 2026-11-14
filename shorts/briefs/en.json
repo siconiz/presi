@@ -1,0 +1,14 @@
+{
+  "lang": "en",
+  "title": "World Leader: Five Years",
+  "game_url": "siconiz.github.io/presi",
+  "concept": "Pick one of 167 real countries and run it for five years",
+  "required_text": "Free · plays in your browser, no install",
+  "scenes": [
+    { "view": "", "focus": "#mapwrap", "caption": "Could you survive\n5 years as president?", "sec": 3.5 },
+    { "view": "", "focus": ".setup", "caption": "Pick any of\n167 real countries", "sec": 3, "max_h": 700 },
+    { "view": "#demo", "focus": ".board", "caption": "Real-world stats\nfrom day one", "sec": 3 },
+    { "view": "#democamp", "focus": ".board", "caption": "Start as a nobody,\nclimb your way to power", "sec": 3 },
+    { "view": "#demoend", "focus": ".ending", "caption": "Then the verdict:\nprison, exile, or glory?", "sec": 3.5, "max_h": 640 }
+  ]
+}

@@ -41,3 +41,20 @@ python -m http.server 8000
 - 지도 글꼴: IM Fell English (SIL OFL 1.1, Google Fonts)
 
 플레이어 지도자는 가상 인물이며, 현직·최근 주요 지도자 이름은 쓸 수 없습니다.
+
+## 쇼츠 영상 (`shorts/`)
+
+게임 화면을 자동 캡처해 1080×1920 세로 영상(MP4, 무음 트랙 포함)을 만듭니다.
+
+- 필요: Node 18+, `playwright`(Chromium 포함), `ffmpeg`. 자막 글꼴(Noto Sans KR)은 Google Fonts에서 받습니다.
+- `shorts/briefs/_template.json`: 새 영상용 빈칸. 복사해서 채운 뒤 실행합니다.
+  - `lang`: 게임 화면 언어(`ko`·`en`) / `title`: 상단 작은 제목
+  - `game_url`: 하단 주소 배지 / `concept`: 첫 장면 부제 / `required_text`: 모든 장면 하단 고정 문구
+  - `scenes[]`: `view`(`""`·`#demo`·`#democamp`·`#demoend`), `focus`(CSS 선택자: `#mapwrap`·`.setup`·`.board`·`.doc`·`.ending`), `caption`(`\n` 줄바꿈), `sec`, 선택 `max_h`(잘라낼 최대 높이 px)·`offset`·`wait`
+- 영어 화면에서는 사건 카드(`.doc`) 본문이 한국어로 남으므로 영어판에는 넣지 마세요.
+
+```bash
+node shorts/make.js shorts/briefs/ko.json shorts/briefs/en.json
+```
+
+결과는 `shorts/out/<브리프 이름>.mp4`와 표지 이미지 `<이름>-cover.png`입니다.
